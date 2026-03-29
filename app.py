@@ -1042,11 +1042,7 @@ if scan_clicked:
               <a href="{stripe_url}" class="paywall-btn">🔒 Volledig rapport ontgrendelen</a>
             </div>
             """, unsafe_allow_html=True)
-            # Verwijder de oude st.link_button regel die hieronder stond!
-            st.link_button(
-                "🔒  Volledig rapport voor €4,95",
-                stripe_url,
-            )
+            
         else:
             st.markdown(f'<div class="rcard-body">{rest}</div>', unsafe_allow_html=True)
             pdf_bytes = create_pdf(rapport, adres_input, bouwjaar, oppervlakte)
