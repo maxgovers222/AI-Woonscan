@@ -1081,12 +1081,12 @@ if not scan_clicked and not betaald:
 
     <div class="stats">
       <div class="stat">
-        <div class="stat-n">2.400+</div>
-        <div class="stat-l">Woningen gescand</div>
+        <div class="stat-n">100%</div>
+        <div class="stat-l">BAG Kadaster Data</div>
       </div>
       <div class="stat">
-        <div class="stat-n">€847</div>
-        <div class="stat-l">Gem. besparing/jaar</div>
+        <div class="stat-n">Claude 3.5</div>
+        <div class="stat-l">Geadvanceerde AI</div>
       </div>
       <div class="stat">
         <div class="stat-n">30 sec</div>
