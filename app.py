@@ -30,17 +30,22 @@ STRIPE_PAYMENT_LINK = os.getenv("STRIPE_PAYMENT_LINK", "")
 APP_URL             = os.getenv("APP_URL", "https://ai-woonscan-qdkwobbescefekt7zxo6j6.streamlit.app")
 
 
-def maak_stripe_url() -> str:
-    """Geeft de Stripe betaallink terug met success URL naar onze app."""
+def maak_stripe_url(adres: str = "") -> str:
+    """Geeft de Stripe betaallink terug met success URL naar onze app.
+    Het adres wordt meegegeven zodat we het na terugkeer nog weten."""
     if not STRIPE_PAYMENT_LINK:
         return ""
-    success_url = urllib.parse.quote(f"{APP_URL}?betaald=ja")
+    adres_encoded = urllib.parse.quote(adres)
+    success_url = urllib.parse.quote(f"{APP_URL}?betaald=ja&adres={adres_encoded}")
     return f"{STRIPE_PAYMENT_LINK}?success_url={success_url}"
 
 
-def controleer_betaling() -> bool:
-    """Geeft True terug als Stripe de gebruiker heeft teruggestuurd na betaling."""
-    return st.query_params.get("betaald", "") == "ja"
+def controleer_betaling() -> tuple[bool, str]:
+    """Geeft (True, adres) terug als Stripe de gebruiker heeft teruggestuurd."""
+    params = st.query_params
+    betaald = params.get("betaald", "") == "ja"
+    adres   = urllib.parse.unquote(params.get("adres", ""))
+    return betaald, adres"
 
 
 # ─────────────────────────────────────────────────────────────
@@ -393,10 +398,11 @@ st.markdown("""
 #  We lezen het adres uit de sessie (daar hebben we het opgeslagen
 #  voordat de gebruiker naar Stripe ging).
 # ─────────────────────────────────────────────────────────────
-betaald = controleer_betaling()
+betaald, url_adres = controleer_betaling()
 
-if betaald and st.session_state.huidig_adres:
-    adres_betaald     = st.session_state.huidig_adres
+if betaald and (url_adres or st.session_state.huidig_adres):
+    # Adres uit URL (betrouwbaar) of sessie als fallback
+    adres_betaald     = url_adres or st.session_state.huidig_adres
     rapport_betaald   = st.session_state.huidig_rapport
     bouwjaar_betaald  = st.session_state.huidig_bouwjaar
     oppervlak_betaald = st.session_state.huidig_oppervlakte
@@ -407,6 +413,21 @@ if betaald and st.session_state.huidig_adres:
       <p>Bedankt! Uw volledige rapport staat hieronder klaar om te downloaden.</p>
     </div>
     """, unsafe_allow_html=True)
+
+    # Als sessie verlopen is: rapport ophalen uit database via adres in URL
+    if not rapport_betaald and adres_betaald:
+        rapport_betaald = zoek_bestaand_rapport(adres_betaald)
+        if not rapport_betaald:
+            with st.spinner("Rapport ophalen..."):
+                bag_tijdelijk = cached_bag_data(adres_betaald)
+                if bag_tijdelijk:
+                    bouwjaar_betaald  = bag_tijdelijk.get("bouwjaar", "Onbekend")
+                    oppervlak_betaald = bag_tijdelijk.get("oppervlakte", "Onbekend")
+                    rapport_betaald   = cached_advies(
+                        bouwjaar_betaald,
+                        oppervlak_betaald,
+                        bag_tijdelijk.get("woningtype", "Woning")
+                    )
 
     # Volledig rapport tonen
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -430,7 +451,7 @@ if betaald and st.session_state.huidig_adres:
     st.query_params.clear()
     st.markdown("---")
 
-elif betaald and not st.session_state.huidig_adres:
+elif betaald and not url_adres and not st.session_state.huidig_adres:
     # Sessie verlopen (bijv. andere browser geopend) — vraag adres opnieuw
     st.warning("Uw sessie is verlopen. Voer uw adres opnieuw in om uw rapport op te halen.")
 
@@ -537,7 +558,7 @@ if scan_clicked:
         st.markdown('</div>', unsafe_allow_html=True)
 
         # Stap 7: BETAALMUUR
-        stripe_url = maak_stripe_url()
+        stripe_url = maak_stripe_url(adres_input)
 
         if stripe_url:
             st.markdown(f"""
@@ -557,11 +578,21 @@ if scan_clicked:
               </div>
             </div>
             """, unsafe_allow_html=True)
-            st.link_button(
-                "🔒  Volledig rapport voor €4,95",
-                stripe_url,
-                use_container_width=True,
-            )
+            st.markdown(f'''
+            <script>
+            function gaNaarStripe() {{
+                window.top.location.href = "{stripe_url}";
+            }}
+            </script>
+            <button onclick="gaNaarStripe()" style="
+                width:100%; display:block;
+                background:linear-gradient(135deg,#F59E0B 0%,#D97706 100%);
+                color:#fff; border:none; cursor:pointer;
+                font-family:Syne,sans-serif; font-weight:800; font-size:1.05rem;
+                padding:15px 24px; border-radius:10px; text-align:center;
+                box-shadow:0 4px 16px rgba(245,158,11,.40);
+            ">🔒 &nbsp; Volledig rapport voor €4,95</button>
+            '''.format(stripe_url=stripe_url), unsafe_allow_html=True)
         else:
             # Testmodus: geen Stripe geconfigureerd
             st.markdown('<div class="card">', unsafe_allow_html=True)
