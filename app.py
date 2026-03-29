@@ -747,8 +747,11 @@ div[data-testid="stLinkButton"] > a:hover {
 [data-testid="stDeckGlJsonChart"] > div {
   border-radius: var(--r) !important;
   overflow: hidden !important;
+  height: 220px !important;
+  min-height: 220px !important;
   max-height: 220px !important;
   border: 1px solid var(--border) !important;
+  margin-bottom: 6px !important;
 }
 
 /* Spinner */
@@ -795,7 +798,7 @@ div[data-testid="stLinkButton"] > a:hover {
 }
 
 .rcard {
-    margin-top: -10px !important; /* Trekt het rapport dichter naar de kaart toe */
+    margin-top: 0 !important; /* Geen overlap-hack: nette spacing via componentmarges */
 }
 
 /* 3. Styling voor de knop IN het betaalveld */
@@ -989,8 +992,6 @@ if scan_clicked:
         """, unsafe_allow_html=True)
 
         st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
-        # Verwijder eventuele st.markdown("<div style='height:8px'></div>") regels hieronder
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
         # Rapport ophalen
         bestaand = zoek_bestaand_rapport(adres_input)
