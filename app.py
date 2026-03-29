@@ -677,7 +677,7 @@ div[data-testid="stButton"] > button {
   transition: all .2s !important;
   width: 100% !important;
   cursor: pointer !important;
-  margin-top: 10px !important;
+  margin-top: 18px !important;
   margin-bottom: 0 !important;
 }
 div[data-testid="stButton"] > button:hover {
@@ -871,7 +871,7 @@ if not betaald:
     <div class="hero">
       <div class="hero-pill">
         <span class="pill-dot"></span>
-        Kadaster BAG-data · Claude AI
+        Kadaster BAG-data · AI-analyse
       </div>
       <h1 class="hero-h1">
         Uw woning verduurzamen?<br>
@@ -887,7 +887,7 @@ if not betaald:
 # ─────────────────────────────────────────────────────────────
 #  ZOEKFORMULIER
 # ─────────────────────────────────────────────────────────────
-st.markdown('<div style="text-align:center; font-size:.65rem; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:#7A8BA8; margin-bottom:12px; margin-top:44px;">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align:center; font-size:.65rem; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:#7A8BA8; margin-bottom:18px; margin-top:44px;">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
 
 adres_input = st.text_input(
     label="adres",
