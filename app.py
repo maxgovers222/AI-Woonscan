@@ -654,8 +654,7 @@ div[data-testid="stTextInput"] input::placeholder {
   color: var(--muted) !important;
 }
 
-/* Center all buttons */
-div[data-testid="stButton"],
+/* Center download and link buttons */
 div[data-testid="stDownloadButton"],
 div[data-testid="stLinkButton"] {
   display: flex !important;
@@ -676,10 +675,9 @@ div[data-testid="stButton"] > button {
   letter-spacing: .1px !important;
   box-shadow: 0 4px 18px rgba(11,29,58,.22) !important;
   transition: all .2s !important;
-  width: auto !important;
-  min-width: 220px !important;
+  width: 100% !important;
   cursor: pointer !important;
-  margin-top: 14px !important;
+  margin-top: 10px !important;
   margin-bottom: 0 !important;
 }
 div[data-testid="stButton"] > button:hover {
@@ -889,14 +887,17 @@ if not betaald:
 # ─────────────────────────────────────────────────────────────
 #  ZOEKFORMULIER
 # ─────────────────────────────────────────────────────────────
-st.markdown('<div style="text-align:center; font-size:.65rem; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:#7A8BA8; margin-bottom:8px;">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align:center; font-size:.65rem; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:#7A8BA8; margin-bottom:10px; margin-top:8px;">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
 
 adres_input = st.text_input(
     label="adres",
     label_visibility="collapsed",
     placeholder="Bijv. Keizersgracht 123, Amsterdam",
 )
-scan_clicked = st.button("Analyseer dit adres →")
+
+col_l, col_m, col_r = st.columns([1, 2, 1])
+with col_m:
+    scan_clicked = st.button("Analyseer dit adres →", use_container_width=True)
 
 st.markdown("""
 <div class="trust">
