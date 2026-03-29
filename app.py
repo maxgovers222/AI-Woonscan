@@ -284,7 +284,7 @@ section[data-testid="stSidebar"] { display: none !important; }
   justify-content: center;
   flex-wrap: wrap;
   gap: 8px 28px;
-  margin: 18px 0 64px;
+  margin: 18px 0 32px;
 }
 .trust-item {
   display: flex;
@@ -300,7 +300,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 .divider {
   border: none;
   border-top: 1px solid var(--border);
-  margin: 0 0 48px;
+  margin: 0 0 36px;
 }
 
 /* ── Woningkaart ──────────────────────────────────── */
@@ -879,7 +879,7 @@ if not betaald:
         Uw woning verduurzamen?<br>
         <em>Wij regelen het advies.</em>
       </h1>
-      <p class="hero-sub">
+      <p class="hero-sub" style="text-align:center; margin-left:auto; margin-right:auto;">
         Vul een adres in en ontvang binnen 30 seconden een persoonlijk
         energiebesparingsplan — gratis, zonder account.
       </p>
@@ -1034,7 +1034,7 @@ if scan_clicked:
 # ─────────────────────────────────────────────────────────────
 if not scan_clicked and not betaald:
     st.markdown("""
-    <hr class="divider">
+    <hr class="divider" style="margin-top:0;">
 
     <div class="how">
       <div class="how-h">Hoe het werkt</div>
