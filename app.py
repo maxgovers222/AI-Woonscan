@@ -4,7 +4,7 @@ import os
 import urllib.parse
 from adres_bag_gegevens import get_bag_data
 from ai_architect import genereer_energie_advies
-from database import sla_scan_op, zoek_bestaand_rapport, is_supabase_actief
+from database import sla_scan_op, zoek_bestaand_rapport, haal_recente_scans_op, is_supabase_actief
 from fpdf import FPDF
 
 # ─────────────────────────────────────────────────────────────
@@ -401,12 +401,31 @@ st.markdown("""
 # ─────────────────────────────────────────────────────────────
 betaald, url_adres = controleer_betaling()
 
-if betaald and (url_adres or st.session_state.huidig_adres):
-    # Adres uit URL (betrouwbaar) of sessie als fallback
-    adres_betaald     = url_adres or st.session_state.huidig_adres
+if betaald:
+    # Adres uit sessie of uit URL
+    adres_betaald     = st.session_state.huidig_adres or url_adres
     rapport_betaald   = st.session_state.huidig_rapport
     bouwjaar_betaald  = st.session_state.huidig_bouwjaar
     oppervlak_betaald = st.session_state.huidig_oppervlakte
+
+    # Sessie verlopen? Haal meest recente scan op uit database
+    if not rapport_betaald:
+        with st.spinner("Rapport ophalen uit database..."):
+            recente_scans = haal_recente_scans_op(limiet=1)
+            if recente_scans:
+                laatste = recente_scans[0]
+                adres_betaald     = laatste.get("adres", adres_betaald)
+                bouwjaar_betaald  = laatste.get("bouwjaar", "Onbekend")
+                oppervlak_betaald = laatste.get("oppervlakte", "Onbekend")
+                rapport_betaald   = zoek_bestaand_rapport(adres_betaald)
+            if not rapport_betaald and adres_betaald:
+                bag_tijdelijk = cached_bag_data(adres_betaald)
+                if bag_tijdelijk:
+                    rapport_betaald = cached_advies(
+                        bag_tijdelijk.get("bouwjaar", "Onbekend"),
+                        bag_tijdelijk.get("oppervlakte", "Onbekend"),
+                        bag_tijdelijk.get("woningtype", "Woning")
+                    )
 
     st.markdown("""
     <div class="succes-banner">
@@ -415,46 +434,29 @@ if betaald and (url_adres or st.session_state.huidig_adres):
     </div>
     """, unsafe_allow_html=True)
 
-    # Als sessie verlopen is: rapport ophalen uit database via adres in URL
-    if not rapport_betaald and adres_betaald:
-        rapport_betaald = zoek_bestaand_rapport(adres_betaald)
-        if not rapport_betaald:
-            with st.spinner("Rapport ophalen..."):
-                bag_tijdelijk = cached_bag_data(adres_betaald)
-                if bag_tijdelijk:
-                    bouwjaar_betaald  = bag_tijdelijk.get("bouwjaar", "Onbekend")
-                    oppervlak_betaald = bag_tijdelijk.get("oppervlakte", "Onbekend")
-                    rapport_betaald   = cached_advies(
-                        bouwjaar_betaald,
-                        oppervlak_betaald,
-                        bag_tijdelijk.get("woningtype", "Woning")
-                    )
+    if rapport_betaald:
+        # Volledig rapport tonen
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">📄 &nbsp;Uw Volledige Verduurzamingsplan</div>', unsafe_allow_html=True)
+        st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="report-body">{rapport_betaald}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # Volledig rapport tonen
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="card-title">📄 &nbsp;Uw Volledige Verduurzamingsplan</div>', unsafe_allow_html=True)
-    st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="report-body">{rapport_betaald}</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        # PDF download
+        pdf_bytes = create_pdf(rapport_betaald, adres_betaald, bouwjaar_betaald, oppervlak_betaald)
+        safe_name = adres_betaald.replace(" ", "_").replace(",", "").replace("/", "-")
+        st.download_button(
+            label="📄  Download uw PDF Rapport",
+            data=pdf_bytes,
+            file_name=f"WoningCheckAI_{safe_name}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
+    else:
+        st.warning("Rapport kon niet worden opgehaald. Voer uw adres opnieuw in.")
 
-    # PDF download
-    pdf_bytes = create_pdf(rapport_betaald, adres_betaald, bouwjaar_betaald, oppervlak_betaald)
-    safe_name = adres_betaald.replace(" ", "_").replace(",", "").replace("/", "-")
-    st.download_button(
-        label="📄  Download uw PDF Rapport",
-        data=pdf_bytes,
-        file_name=f"WoningCheckAI_{safe_name}.pdf",
-        mime="application/pdf",
-        use_container_width=True,
-    )
-
-    # Reset betaling URL zodat de banner verdwijnt bij volgende scan
     st.query_params.clear()
     st.markdown("---")
-
-elif betaald and not url_adres and not st.session_state.huidig_adres:
-    # Sessie verlopen (bijv. andere browser geopend) — vraag adres opnieuw
-    st.warning("Uw sessie is verlopen. Voer uw adres opnieuw in om uw rapport op te halen.")
 
 
 # ─────────────────────────────────────────────────────────────
