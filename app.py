@@ -1,5 +1,5 @@
 import streamlit as st
-import pydeck as pdk
+import streamlit.components.v1 as components
 import datetime
 import os
 import urllib.parse
@@ -1014,27 +1014,38 @@ if scan_clicked:
         </div>
         """, unsafe_allow_html=True)
 
-        # Altijd zichtbare kaart met vaste hoogte (voorkomt grote lege ruimte door auto-wrapper).
-        kaart_data = [{"lat": data["lat"], "lon": data["lon"]}]
-        kaart_layer = pdk.Layer(
-            "ScatterplotLayer",
-            data=kaart_data,
-            get_position="[lon, lat]",
-            get_radius=95,
-            get_fill_color="[255, 69, 0, 140]",
-            pickable=False,
-        )
-        kaart_view = pdk.ViewState(latitude=data["lat"], longitude=data["lon"], zoom=16, pitch=0)
-        st.pydeck_chart(
-            pdk.Deck(
-                map_provider="carto",
-                map_style="dark",
-                initial_view_state=kaart_view,
-                layers=[kaart_layer],
-                height=220,
-            ),
-            use_container_width=True,
-        )
+        # Altijd zichtbare kaart met vaste hoogte zonder extra lege pydeck/st.map-container.
+        lat = float(data["lat"])
+        lon = float(data["lon"])
+        kaart_html = f"""
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <style>
+          #woning-map {{
+            width: 100%;
+            height: 220px;
+            border: 1px solid #2E3A52;
+            border-radius: 12px;
+            overflow: hidden;
+          }}
+        </style>
+        <div id="woning-map"></div>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script>
+          const map = L.map('woning-map', {{ zoomControl: true }}).setView([{lat}, {lon}], 16);
+          L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            maxZoom: 20
+          }}).addTo(map);
+          L.circle([{lat}, {lon}], {{
+            radius: 95,
+            color: '#ff4500',
+            fillColor: '#ff4500',
+            fillOpacity: 0.45,
+            weight: 1
+          }}).addTo(map);
+        </script>
+        """
+        components.html(kaart_html, height=220)
 
         # Rapport ophalen
         bestaand = zoek_bestaand_rapport(adres_input)
