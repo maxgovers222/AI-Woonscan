@@ -31,11 +31,14 @@ APP_URL             = os.getenv("APP_URL", "https://ai-woonscan-qdkwobbescefekt7
 
 
 def maak_stripe_url(adres: str = "") -> str:
-    """Geeft de kale Stripe betaallink terug.
-    Het adres wordt opgeslagen in sessie — de success URL staat al in Stripe ingesteld."""
+    """Geeft de Stripe betaallink terug met het adres in de success URL."""
     if not STRIPE_PAYMENT_LINK:
         return ""
-    return STRIPE_PAYMENT_LINK
+    # Adres veilig encoderen voor gebruik in URL
+    adres_encoded = urllib.parse.quote(adres, safe="")
+    success_url = f"{APP_URL}?betaald=ja&adres={adres_encoded}"
+    # Success URL encoderen voor meegeven aan Stripe
+    return f"{STRIPE_PAYMENT_LINK}?success_url={urllib.parse.quote(success_url, safe=':/?=&')}"
 
 
 def controleer_betaling() -> tuple[bool, str]:
