@@ -131,7 +131,7 @@ if "huidig_oppervlakte" not in st.session_state:
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap');
+@import url('[https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap](https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap)');
 
 :root {
   --navy:      #0B1D3A;
@@ -252,7 +252,7 @@ footer, #MainMenu,
 /* ── Hero ─────────────────────────────────────────── */
 .hero {
   text-align: center;
-  padding: 4px 0 32px;
+  padding: 20px 0 45px; /* Diepere spacing voor ademruimte */
 }
 .hero-eyebrow {
   display: inline-flex;
@@ -301,32 +301,15 @@ footer, #MainMenu,
   margin: 0 auto;
 }
 
-/* ── Zoekbox ──────────────────────────────────────── */
-.search-wrap {
-  background: var(--surface);
-  border: 1.5px solid var(--border-h);
-  border-radius: var(--radius-lg);
-  padding: 18px 22px 14px;
-  box-shadow: var(--shadow-m);
-  margin-bottom: 14px;
-}
-.search-label {
-  font-size: .7rem;
-  font-weight: 700;
-  color: var(--muted);
-  letter-spacing: .7px;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-
 /* ── Trust strip ──────────────────────────────────── */
 .trust {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 4px 14px;
-  margin-bottom: 36px;
+  gap: 8px 18px; /* Meer ruimte tussen vinkjes */
+  margin-top: 10px;
+  margin-bottom: 60px; /* Meer ruimte richting 'Hoe het werkt' */
   padding: 0 4px;
 }
 .trust-item {
@@ -698,9 +681,10 @@ footer, #MainMenu,
 div[data-testid="stTextInput"] > div > div {
   border: 1.5px solid var(--border-h) !important;
   border-radius: 10px !important;
-  background: var(--bg) !important;
-  box-shadow: none !important;
+  background: var(--surface) !important; /* Witte balk achtergrond voor zoekveld */
+  box-shadow: var(--shadow-m) !important; /* Mooie schaduw eromheen */
   transition: border-color .2s, box-shadow .2s !important;
+  margin-bottom: 14px !important;
 }
 div[data-testid="stTextInput"] > div > div:focus-within {
   border-color: var(--navy-lt) !important;
@@ -708,14 +692,15 @@ div[data-testid="stTextInput"] > div > div:focus-within {
 }
 div[data-testid="stTextInput"] input {
   font-family: 'DM Sans', sans-serif !important;
-  font-size: .9rem !important;
+  font-size: 1.05rem !important; /* Groter lettertype voor input */
   color: var(--text) !important;
-  padding: 10px 14px !important;
+  padding: 14px 14px !important; /* Meer ademruimte */
   background: transparent !important;
+  text-align: center !important; /* Forceert de tekst naar het midden */
 }
 div[data-testid="stTextInput"] input::placeholder {
   color: var(--muted) !important;
-  font-size: .86rem !important;
+  font-size: 1rem !important;
 }
 
 /* ── KNOPPEN — beperkte breedte, gecentreerd ──────── */
@@ -729,6 +714,7 @@ div[data-testid="stLinkButton"] {
 div[data-testid="stButton"] > button {
   max-width: 340px !important;
   width: 100% !important;
+  margin: 15px auto 40px auto !important; /* Zorgt dat de knop in het midden blijft en ademruimte heeft */
   background: var(--navy) !important;
   color: #fff !important;
   border: none !important;
@@ -828,7 +814,6 @@ div[data-testid="stLinkButton"] > a:hover {
     padding-left: 12px !important;
     padding-right: 12px !important;
   }
-  .search-wrap { padding: 14px 16px 12px; }
   .navbar { padding: 12px 0 14px; margin-bottom: 20px; }
   .hero { padding: 2px 0 20px; }
   .paywall { padding: 20px 16px; }
@@ -939,7 +924,9 @@ if not betaald:
     </div>
     """, unsafe_allow_html=True)
 
-st.markdown('<div class="search-label">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
+# LET OP: De "<div class='search-wrap'>" wrapper is verwijderd om de spookbalk te fixen.
+# We hebben de styling nu verplaatst naar de CSS voor "stTextInput" zelf.
+st.markdown('<div class="search-label" style="text-align: center; margin-bottom: 12px; font-size: 0.75rem; color: #6B7896; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px;">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
 adres_input = st.text_input(
     label="adres",
     label_visibility="collapsed",
