@@ -45,7 +45,7 @@ def controleer_betaling() -> tuple[bool, str]:
     params = st.query_params
     betaald = params.get("betaald", "") == "ja"
     adres   = urllib.parse.unquote(params.get("adres", ""))
-    return betaald, adres"
+    return betaald, adres
 
 
 # ─────────────────────────────────────────────────────────────
