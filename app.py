@@ -581,7 +581,7 @@ if scan_clicked:
             stripe_js = f"""
             <script>
             function gaNaarStripe() {{
-                window.top.location.href = "{stripe_url}";
+                window.location.href = "{stripe_url}";
             }}
             </script>
             <button onclick="gaNaarStripe()" style="width:100%;display:block;
