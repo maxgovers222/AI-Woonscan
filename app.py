@@ -167,7 +167,7 @@ html, body, .stApp,
 /* Max-width container */
 [data-testid="stMainBlockContainer"],
 .block-container {
-  max-width: 820px !important;
+  max-width: 920px !important;
   margin: 0 auto !important;
   padding: 0 32px 80px !important;
 }
@@ -597,8 +597,7 @@ section[data-testid="stSidebar"] { display: none !important; }
   gap: 56px;
   padding: 40px 0;
   border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 56px;
+  margin-bottom: 0;
   flex-wrap: wrap;
 }
 .stat { text-align: center; }
@@ -622,7 +621,6 @@ section[data-testid="stSidebar"] { display: none !important; }
 .footer {
   text-align: center;
   padding: 28px 0 8px;
-  border-top: 1px solid var(--border);
   font-size: .72rem;
   color: var(--muted);
   line-height: 1.9;
