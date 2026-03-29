@@ -13,7 +13,7 @@ from fpdf import FPDF
 st.set_page_config(
     page_title="WoningCheckAI – Gratis Energiescan",
     page_icon="🏡",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="collapsed",
 )
 
@@ -127,33 +127,33 @@ if "huidig_oppervlakte" not in st.session_state:
 
 
 # ─────────────────────────────────────────────────────────────
-#  CSS — Volledige revamp
+#  CSS — Professionele, strakke layout
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:ital,wght@0,700;0,900;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap');
 
 :root {
-  --blue:      #0A2463;
-  --blue-mid:  #1B3F8B;
-  --blue-lt:   #2D5BE3;
-  --green:     #059669;
-  --green-lt:  #10B981;
-  --green-xlt: #D1FAE5;
-  --amber:     #D97706;
-  --amber-lt:  #FEF3C7;
-  --bg:        #F8FAFF;
+  --navy:      #0B1D3A;
+  --navy-mid:  #132E5B;
+  --navy-lt:   #1E4D8C;
+  --accent:    #0EA56F;
+  --accent-dk: #0A8A5C;
+  --accent-lt: #E7F9F1;
+  --warm:      #F5A623;
+  --warm-lt:   #FFF8EC;
+  --bg:        #F6F8FB;
   --surface:   #FFFFFF;
-  --text:      #0F172A;
-  --text-2:    #334155;
-  --muted:     #64748B;
-  --border:    #E2E8F0;
-  --border-2:  #CBD5E1;
-  --r-sm:      8px;
-  --r:         16px;
-  --r-lg:      24px;
-  --sh:        0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(10,36,99,.07);
-  --sh-lg:     0 4px 6px rgba(0,0,0,.04), 0 20px 48px rgba(10,36,99,.12);
+  --text:      #1A1F2E;
+  --text-2:    #3D4663;
+  --muted:     #6B7896;
+  --border:    #E4E9F2;
+  --border-h:  #CDD5E3;
+  --radius:    12px;
+  --radius-lg: 20px;
+  --shadow-s:  0 1px 2px rgba(11,29,58,.04), 0 2px 8px rgba(11,29,58,.06);
+  --shadow-m:  0 2px 4px rgba(11,29,58,.04), 0 8px 24px rgba(11,29,58,.08);
+  --shadow-l:  0 4px 8px rgba(11,29,58,.04), 0 16px 40px rgba(11,29,58,.10);
 }
 
 /* ── Reset & base ─────────────────────────────────── */
@@ -161,9 +161,9 @@ st.markdown("""
 
 html, body,
 [data-testid="stAppViewContainer"],
-[data-testid="stAppViewBlockContainer"] {
+.stApp {
   background: var(--bg) !important;
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
   color: var(--text) !important;
 }
 
@@ -171,13 +171,33 @@ html, body,
 [data-testid="stHeader"],
 [data-testid="stToolbar"],
 [data-testid="stDecoration"],
-footer, #MainMenu { display: none !important; }
+footer, #MainMenu,
+.stDeployButton { display: none !important; }
 
-/* Centreer alles met max-breedte */
-[data-testid="stAppViewBlockContainer"] {
-  max-width: 860px !important;
+/* ── KERNFIX: beperk breedte ──────────────────────── */
+[data-testid="stMain"] {
+  background: var(--bg) !important;
+}
+
+.block-container,
+[data-testid="stMainBlockContainer"] {
+  max-width: 680px !important;
   margin: 0 auto !important;
-  padding: 0 24px 48px !important;
+  padding: 0 20px 60px !important;
+}
+
+/* Verwijder lege ruimtes */
+[data-testid="stVerticalBlock"] {
+  gap: 0.35rem !important;
+}
+[data-testid="stElementContainer"]:has(> div:empty),
+[data-testid="stVerticalBlock"] > div:empty,
+.element-container:empty {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
 }
 
 /* ── Navigatiebalk ────────────────────────────────── */
@@ -185,202 +205,216 @@ footer, #MainMenu { display: none !important; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 0 28px;
+  padding: 18px 0 20px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 48px;
+  margin-bottom: 32px;
 }
 .nav-logo {
-  font-family: 'Fraunces', serif;
-  font-weight: 900;
-  font-size: 1.4rem;
-  color: var(--blue);
-  letter-spacing: -0.5px;
+  font-family: 'Playfair Display', serif;
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--navy);
+  letter-spacing: -0.3px;
   line-height: 1;
 }
 .nav-logo em {
-  font-style: normal;
-  color: var(--green);
+  font-style: italic;
+  color: var(--accent);
+}
+.nav-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .nav-badge {
-  background: var(--green-xlt);
-  color: var(--green);
-  font-size: .72rem;
+  background: var(--accent-lt);
+  color: var(--accent);
+  font-size: .62rem;
   font-weight: 700;
-  letter-spacing: .8px;
+  letter-spacing: .5px;
   text-transform: uppercase;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(5,150,105,.2);
+  border: 1px solid rgba(14,165,111,.15);
+}
+.nav-secure {
+  background: var(--warm-lt);
+  color: var(--warm);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(245,166,35,.15);
 }
 
 /* ── Hero ─────────────────────────────────────────── */
 .hero {
   text-align: center;
-  padding: 16px 0 48px;
+  padding: 4px 0 32px;
 }
 .hero-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: .78rem;
-  font-weight: 600;
-  color: var(--green);
-  letter-spacing: .6px;
+  gap: 7px;
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: .7px;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
+  background: var(--accent-lt);
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(14,165,111,.12);
 }
 .hero-eyebrow-dot {
-  width: 6px; height: 6px;
-  background: var(--green);
+  width: 5px; height: 5px;
+  background: var(--accent);
   border-radius: 50%;
-  animation: pulse 2s infinite;
+  animation: pulse 2.5s ease-in-out infinite;
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: .5; transform: scale(1.3); }
+  50% { opacity: .4; transform: scale(1.4); }
 }
 .hero-title {
-  font-family: 'Fraunces', serif;
-  font-weight: 900;
-  font-size: clamp(2.2rem, 5vw, 3.2rem);
-  color: var(--blue);
-  line-height: 1.1;
-  letter-spacing: -1px;
-  margin-bottom: 18px;
+  font-family: 'Playfair Display', serif;
+  font-weight: 800;
+  font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+  color: var(--navy);
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  margin-bottom: 14px;
 }
 .hero-title em {
   font-style: italic;
-  color: var(--green);
+  color: var(--accent);
 }
 .hero-sub {
-  font-size: 1.1rem;
+  font-size: .95rem;
   color: var(--muted);
   font-weight: 400;
   line-height: 1.6;
-  max-width: 540px;
-  margin: 0 auto 36px;
+  max-width: 460px;
+  margin: 0 auto;
 }
 
 /* ── Zoekbox ──────────────────────────────────────── */
 .search-wrap {
   background: var(--surface);
-  border: 1.5px solid var(--border-2);
-  border-radius: var(--r-lg);
-  padding: 24px 28px 20px;
-  box-shadow: var(--sh-lg);
-  margin-bottom: 20px;
+  border: 1.5px solid var(--border-h);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px 14px;
+  box-shadow: var(--shadow-m);
+  margin-bottom: 14px;
 }
 .search-label {
-  font-size: .78rem;
+  font-size: .7rem;
   font-weight: 700;
   color: var(--muted);
-  letter-spacing: .6px;
+  letter-spacing: .7px;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
-/* ── Trust pills ──────────────────────────────────── */
+/* ── Trust strip ──────────────────────────────────── */
 .trust {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 6px 20px;
-  margin-bottom: 52px;
+  gap: 4px 14px;
+  margin-bottom: 36px;
+  padding: 0 4px;
 }
 .trust-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: .8rem;
+  gap: 4px;
+  font-size: .72rem;
   color: var(--muted);
   font-weight: 500;
+  white-space: nowrap;
 }
 .trust-check {
-  color: var(--green);
-  font-size: .9rem;
-}
-
-/* ── Section label ────────────────────────────────── */
-.section-label {
-  font-size: .72rem;
+  color: var(--accent);
+  font-size: .8rem;
   font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 16px;
 }
 
 /* ── Resultaat card ───────────────────────────────── */
 .result-card {
   background: var(--surface);
   border: 1.5px solid var(--border);
-  border-radius: var(--r);
+  border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: var(--sh);
-  margin-bottom: 20px;
+  box-shadow: var(--shadow-s);
+  margin-bottom: 14px;
 }
 .result-card-header {
-  background: var(--blue);
-  padding: 16px 24px;
+  background: var(--navy);
+  padding: 13px 18px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .result-card-header-title {
-  font-weight: 700;
-  font-size: .95rem;
+  font-weight: 600;
+  font-size: .86rem;
   color: #fff;
-  letter-spacing: -.2px;
 }
-.result-card-body { padding: 24px; }
+.result-card-body { padding: 18px; }
 
 /* ── Metric pills ─────────────────────────────────── */
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+}
+@media (max-width: 480px) {
+  .metrics { grid-template-columns: 1fr; }
 }
 .metric {
   background: var(--bg);
   border: 1.5px solid var(--border);
-  border-radius: var(--r-sm);
-  padding: 14px 16px;
+  border-radius: 10px;
+  padding: 12px;
   text-align: center;
 }
 .metric-label {
-  font-size: .68rem;
+  font-size: .62rem;
   font-weight: 700;
-  letter-spacing: .7px;
+  letter-spacing: .8px;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 .metric-value {
-  font-family: 'Fraunces', serif;
+  font-family: 'Playfair Display', serif;
   font-weight: 700;
-  font-size: 1.6rem;
-  color: var(--blue);
-  line-height: 1;
+  font-size: 1.4rem;
+  color: var(--navy);
+  line-height: 1.1;
 }
 .metric-unit {
-  font-size: .75rem;
+  font-size: .68rem;
   color: var(--muted);
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 /* ── Rapport ──────────────────────────────────────── */
 .rapport-card {
   background: var(--surface);
   border: 1.5px solid var(--border);
-  border-radius: var(--r);
+  border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: var(--sh);
-  margin-bottom: 20px;
+  box-shadow: var(--shadow-s);
+  margin-bottom: 14px;
 }
 .rapport-header {
-  padding: 18px 24px;
+  padding: 14px 18px;
   border-bottom: 1.5px solid var(--border);
   display: flex;
   align-items: center;
@@ -388,104 +422,110 @@ footer, #MainMenu { display: none !important; }
 }
 .rapport-header-title {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: .9rem;
   color: var(--text);
 }
 .rapport-badge {
-  background: var(--green-xlt);
-  color: var(--green);
-  font-size: .7rem;
+  background: var(--accent-lt);
+  color: var(--accent);
+  font-size: .62rem;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 3px 9px;
   border-radius: 999px;
+  letter-spacing: .3px;
 }
 .rapport-body {
-  padding: 28px 28px 24px;
-  font-size: .96rem;
-  line-height: 1.8;
+  padding: 20px 22px 18px;
+  font-size: .9rem;
+  line-height: 1.72;
   color: var(--text-2);
 }
 .rapport-body h1, .rapport-body h2 {
-  font-family: 'Fraunces', serif;
+  font-family: 'Playfair Display', serif;
   font-weight: 700;
-  color: var(--blue);
-  font-size: 1.25rem;
-  margin: 1.6em 0 .6em;
-  padding-bottom: 8px;
+  color: var(--navy);
+  font-size: 1.1rem;
+  margin: 1.3em 0 .45em;
+  padding-bottom: 5px;
   border-bottom: 2px solid var(--border);
 }
 .rapport-body h3 {
   font-weight: 700;
   color: var(--text);
-  font-size: 1rem;
-  margin: 1.3em 0 .4em;
+  font-size: .92rem;
+  margin: 1.1em 0 .3em;
 }
 .rapport-body strong { color: var(--text); font-weight: 700; }
-.rapport-body ul { padding-left: 20px; margin: .5em 0; }
-.rapport-body li { margin-bottom: 4px; }
+.rapport-body ul { padding-left: 18px; margin: .4em 0; }
+.rapport-body li { margin-bottom: 3px; }
 .rapport-body table {
   width: 100%; border-collapse: collapse;
-  font-size: .88rem; margin: 1.2em 0;
-  border-radius: var(--r-sm); overflow: hidden;
+  font-size: .8rem; margin: 1em 0;
+  border-radius: 8px; overflow: hidden;
 }
 .rapport-body th {
-  background: var(--blue); color: #fff;
-  padding: 10px 14px; text-align: left;
-  font-weight: 600; font-size: .82rem;
+  background: var(--navy); color: #fff;
+  padding: 8px 10px; text-align: left;
+  font-weight: 600; font-size: .74rem;
+  letter-spacing: .2px;
 }
 .rapport-body td {
-  padding: 9px 14px;
+  padding: 7px 10px;
   border-bottom: 1px solid var(--border);
   color: var(--text-2);
 }
 .rapport-body tr:nth-child(even) td { background: var(--bg); }
 
 /* Preview fade */
-.preview-wrap { position: relative; overflow: hidden; max-height: 340px; }
+.preview-wrap {
+  position: relative;
+  overflow: hidden;
+  max-height: 300px;
+}
 .preview-wrap::after {
   content: '';
-  position: absolute; bottom: 0; left: 0; right: 0; height: 160px;
+  position: absolute; bottom: 0; left: 0; right: 0; height: 120px;
   background: linear-gradient(transparent, var(--surface));
   pointer-events: none;
 }
 
 /* ── Betaalmuur ───────────────────────────────────── */
 .paywall {
-  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-  border: 2px solid #93C5FD;
-  border-radius: var(--r);
-  padding: 32px 28px;
+  background: linear-gradient(145deg, #F0F6FF 0%, #E0ECFA 100%);
+  border: 1.5px solid #B8D0F0;
+  border-radius: var(--radius);
+  padding: 26px 22px;
   text-align: center;
-  margin-bottom: 16px;
-}
-.paywall-icon { font-size: 2rem; margin-bottom: 12px; }
-.paywall-title {
-  font-family: 'Fraunces', serif;
-  font-weight: 700;
-  font-size: 1.4rem;
-  color: var(--blue);
   margin-bottom: 10px;
 }
+.paywall-icon { font-size: 1.5rem; margin-bottom: 8px; }
+.paywall-title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
 .paywall-sub {
-  font-size: .92rem;
+  font-size: .84rem;
   color: var(--text-2);
-  line-height: 1.6;
-  margin-bottom: 20px;
-  max-width: 440px;
+  line-height: 1.55;
+  margin-bottom: 14px;
+  max-width: 400px;
   margin-left: auto;
   margin-right: auto;
 }
 .paywall-price {
-  font-family: 'Fraunces', serif;
-  font-weight: 900;
-  font-size: 2.4rem;
-  color: var(--blue);
-  margin-bottom: 16px;
+  font-family: 'Playfair Display', serif;
+  font-weight: 800;
+  font-size: 1.9rem;
+  color: var(--navy);
+  margin-bottom: 12px;
   line-height: 1;
 }
 .paywall-price small {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: .85rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .78rem;
   font-weight: 400;
   color: var(--muted);
 }
@@ -493,181 +533,308 @@ footer, #MainMenu { display: none !important; }
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px 20px;
-  margin-bottom: 24px;
-  font-size: .83rem;
+  gap: 5px 14px;
+  margin-bottom: 18px;
+  font-size: .76rem;
   color: var(--text-2);
 }
-.paywall-list span { display: flex; align-items: center; gap: 5px; }
-.paywall-list .chk { color: var(--green); font-weight: 700; }
+.paywall-list span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.paywall-list .chk { color: var(--accent); font-weight: 700; }
 
 /* ── Succes banner ────────────────────────────────── */
 .succes {
-  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
-  border: 2px solid var(--green-lt);
-  border-radius: var(--r);
-  padding: 24px 28px;
+  background: linear-gradient(145deg, #ECFDF5 0%, #D1FAE5 100%);
+  border: 1.5px solid #86EFAC;
+  border-radius: var(--radius);
+  padding: 18px 20px;
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 18px;
 }
-.succes-icon { font-size: 1.8rem; flex-shrink: 0; }
-.succes-title { font-weight: 700; color: #065F46; font-size: 1rem; margin-bottom: 4px; }
-.succes-sub { font-size: .88rem; color: #047857; }
+.succes-icon { font-size: 1.4rem; flex-shrink: 0; }
+.succes-title { font-weight: 700; color: #065F46; font-size: .88rem; margin-bottom: 2px; }
+.succes-sub { font-size: .8rem; color: #047857; line-height: 1.5; }
 
 /* ── Features ─────────────────────────────────────── */
 .features {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 48px;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+@media (max-width: 480px) {
+  .features { grid-template-columns: 1fr; }
 }
 .feature {
   background: var(--surface);
   border: 1.5px solid var(--border);
-  border-radius: var(--r);
-  padding: 24px;
-  box-shadow: var(--sh);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow-s);
   transition: box-shadow .2s, transform .2s;
 }
-.feature:hover { box-shadow: var(--sh-lg); transform: translateY(-2px); }
+.feature:hover {
+  box-shadow: var(--shadow-m);
+  transform: translateY(-2px);
+}
 .feature-icon {
-  width: 40px; height: 40px;
-  background: var(--green-xlt);
-  border-radius: 10px;
+  width: 34px; height: 34px;
+  background: var(--accent-lt);
+  border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem;
-  margin-bottom: 14px;
+  font-size: .95rem;
+  margin-bottom: 10px;
 }
 .feature-title {
   font-weight: 700;
-  font-size: .95rem;
+  font-size: .84rem;
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
-.feature-desc { font-size: .84rem; color: var(--muted); line-height: 1.55; }
+.feature-desc {
+  font-size: .78rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── Hoe het werkt ────────────────────────────────── */
+.how-section {
+  margin-bottom: 32px;
+}
+.how-title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--navy);
+  text-align: center;
+  margin-bottom: 18px;
+}
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+.step-num {
+  width: 28px; height: 28px;
+  min-width: 28px;
+  background: var(--navy);
+  color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .74rem;
+  font-weight: 700;
+}
+.step-text { flex: 1; }
+.step-title {
+  font-weight: 700;
+  font-size: .84rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.step-desc {
+  font-size: .78rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* ── Social proof ─────────────────────────────────── */
+.social-proof {
+  text-align: center;
+  padding: 24px 0;
+  margin-bottom: 32px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.social-proof-stats {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.sp-stat { text-align: center; }
+.sp-number {
+  font-family: 'Playfair Display', serif;
+  font-weight: 800;
+  font-size: 1.45rem;
+  color: var(--navy);
+  line-height: 1;
+}
+.sp-label {
+  font-size: .68rem;
+  color: var(--muted);
+  font-weight: 500;
+  margin-top: 3px;
+}
 
 /* ── Footer ───────────────────────────────────────── */
 .footer {
   text-align: center;
-  padding: 32px 0 8px;
+  padding: 24px 0 8px;
   border-top: 1px solid var(--border);
-  font-size: .78rem;
+  font-size: .7rem;
   color: var(--muted);
-  line-height: 1.8;
+  line-height: 1.7;
 }
 
-/* ── Streamlit widget overrides ───────────────────── */
+/* ═════════════════════════════════════════════════════
+   STREAMLIT WIDGET OVERRIDES
+   ═════════════════════════════════════════════════════ */
 
 /* Text input */
 div[data-testid="stTextInput"] > div > div {
-  border: 1.5px solid var(--border-2) !important;
-  border-radius: var(--r-sm) !important;
+  border: 1.5px solid var(--border-h) !important;
+  border-radius: 10px !important;
   background: var(--bg) !important;
   box-shadow: none !important;
   transition: border-color .2s, box-shadow .2s !important;
 }
 div[data-testid="stTextInput"] > div > div:focus-within {
-  border-color: var(--blue-lt) !important;
-  box-shadow: 0 0 0 3px rgba(45,91,227,.12) !important;
+  border-color: var(--navy-lt) !important;
+  box-shadow: 0 0 0 3px rgba(30,77,140,.10) !important;
 }
 div[data-testid="stTextInput"] input {
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
-  font-size: .97rem !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: .9rem !important;
   color: var(--text) !important;
-  padding: 12px 16px !important;
+  padding: 10px 14px !important;
   background: transparent !important;
 }
 div[data-testid="stTextInput"] input::placeholder {
   color: var(--muted) !important;
+  font-size: .86rem !important;
 }
 
-/* Primaire knop (scan) */
+/* ── KNOPPEN — beperkte breedte, gecentreerd ──────── */
+div[data-testid="stButton"],
+div[data-testid="stDownloadButton"],
+div[data-testid="stLinkButton"] {
+  display: flex !important;
+  justify-content: center !important;
+}
+
 div[data-testid="stButton"] > button {
+  max-width: 340px !important;
   width: 100% !important;
-  background: var(--blue) !important;
+  background: var(--navy) !important;
   color: #fff !important;
   border: none !important;
-  border-radius: var(--r-sm) !important;
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  border-radius: 10px !important;
+  font-family: 'DM Sans', sans-serif !important;
   font-weight: 700 !important;
-  font-size: .97rem !important;
-  padding: 13px 24px !important;
+  font-size: .88rem !important;
+  padding: 11px 20px !important;
   letter-spacing: .2px !important;
-  box-shadow: 0 4px 14px rgba(10,36,99,.25) !important;
-  transition: background .15s, box-shadow .15s, transform .15s !important;
-  margin-top: 8px !important;
+  box-shadow: 0 2px 8px rgba(11,29,58,.18) !important;
+  transition: all .15s !important;
+  cursor: pointer !important;
 }
 div[data-testid="stButton"] > button:hover {
-  background: var(--blue-mid) !important;
-  box-shadow: 0 6px 20px rgba(10,36,99,.32) !important;
+  background: var(--navy-mid) !important;
+  box-shadow: 0 4px 14px rgba(11,29,58,.24) !important;
   transform: translateY(-1px) !important;
 }
 
-/* Download knop */
 div[data-testid="stDownloadButton"] > button {
+  max-width: 340px !important;
   width: 100% !important;
-  background: var(--blue) !important;
+  background: var(--navy) !important;
   color: #fff !important;
   border: none !important;
-  border-radius: var(--r-sm) !important;
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  border-radius: 10px !important;
+  font-family: 'DM Sans', sans-serif !important;
   font-weight: 700 !important;
-  font-size: .97rem !important;
-  padding: 13px 24px !important;
-  box-shadow: 0 4px 14px rgba(10,36,99,.25) !important;
-  transition: background .15s, box-shadow .15s, transform .15s !important;
+  font-size: .88rem !important;
+  padding: 11px 20px !important;
+  box-shadow: 0 2px 8px rgba(11,29,58,.18) !important;
+  transition: all .15s !important;
+  cursor: pointer !important;
 }
 div[data-testid="stDownloadButton"] > button:hover {
-  background: var(--blue-mid) !important;
+  background: var(--navy-mid) !important;
   transform: translateY(-1px) !important;
 }
 
-/* Link knop (Stripe betaalknop) */
 div[data-testid="stLinkButton"] > a {
   display: block !important;
+  max-width: 340px !important;
   width: 100% !important;
-  background: var(--green) !important;
+  background: var(--accent) !important;
   color: #fff !important;
   border: none !important;
-  border-radius: var(--r-sm) !important;
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  border-radius: 10px !important;
+  font-family: 'DM Sans', sans-serif !important;
   font-weight: 700 !important;
-  font-size: 1rem !important;
-  padding: 13px 24px !important;
+  font-size: .9rem !important;
+  padding: 11px 20px !important;
   text-align: center !important;
   text-decoration: none !important;
-  box-shadow: 0 4px 14px rgba(5,150,105,.30) !important;
-  transition: background .15s, box-shadow .15s, transform .15s !important;
+  box-shadow: 0 2px 8px rgba(14,165,111,.22) !important;
+  transition: all .15s !important;
+  cursor: pointer !important;
 }
 div[data-testid="stLinkButton"] > a:hover {
-  background: #047857 !important;
-  box-shadow: 0 6px 20px rgba(5,150,105,.38) !important;
+  background: var(--accent-dk) !important;
+  box-shadow: 0 4px 14px rgba(14,165,111,.30) !important;
   transform: translateY(-1px) !important;
 }
 
 /* Alerts */
 [data-testid="stAlert"] {
-  border-radius: var(--r-sm) !important;
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  border-radius: 10px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: .84rem !important;
 }
 
 /* Map */
 [data-testid="stDeckGlJsonChart"],
-iframe { border-radius: var(--r-sm) !important; overflow: hidden; }
+[data-testid="stDeckGlJsonChart"] > div {
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  max-height: 200px !important;
+}
 
 /* Spinner */
 [data-testid="stSpinner"] p {
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
-  color: var(--blue) !important;
-  font-size: .9rem !important;
+  font-family: 'DM Sans', sans-serif !important;
+  color: var(--navy) !important;
+  font-size: .84rem !important;
 }
 
 /* Caption */
 [data-testid="stCaptionContainer"] {
   color: var(--muted) !important;
-  font-size: .78rem !important;
+  font-size: .72rem !important;
+  text-align: center !important;
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 560px) {
+  .block-container,
+  [data-testid="stMainBlockContainer"] {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  .search-wrap { padding: 14px 16px 12px; }
+  .navbar { padding: 12px 0 14px; margin-bottom: 20px; }
+  .hero { padding: 2px 0 20px; }
+  .paywall { padding: 20px 16px; }
+  .trust { gap: 3px 10px; }
+  .trust-item { font-size: .66rem; }
+  .nav-secure { display: none; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -679,7 +846,10 @@ iframe { border-radius: var(--r-sm) !important; overflow: hidden; }
 st.markdown("""
 <div class="navbar">
   <div class="nav-logo">Woning<em>Check</em>AI</div>
-  <div class="nav-badge">✦ Beta</div>
+  <div class="nav-pills">
+    <div class="nav-secure">🔒 SSL</div>
+    <div class="nav-badge">✦ Beta</div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -741,13 +911,11 @@ if betaald:
             data=pdf_bytes,
             file_name=f"WoningCheckAI_{safe_name}.pdf",
             mime="application/pdf",
-            use_container_width=True,
         )
     else:
         st.warning("Rapport kon niet worden opgehaald. Voer uw adres hieronder opnieuw in.")
 
     st.query_params.clear()
-    st.markdown("<br>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -758,7 +926,7 @@ if not betaald:
     <div class="hero">
       <div class="hero-eyebrow">
         <span class="hero-eyebrow-dot"></span>
-        Officiële Kadaster BAG-data · Claude AI analyse
+        Kadaster BAG-data · Claude AI analyse
       </div>
       <h1 class="hero-title">
         Uw woning verduurzamen?<br>
@@ -778,12 +946,12 @@ adres_input = st.text_input(
     label_visibility="collapsed",
     placeholder="Bijv. Keizersgracht 123, Amsterdam",
 )
-scan_clicked = st.button("Analyseer dit adres →", use_container_width=True)
+scan_clicked = st.button("Analyseer dit adres →")
 st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("""
 <div class="trust">
-  <span class="trust-item"><span class="trust-check">✓</span> Preview altijd gratis</span>
+  <span class="trust-item"><span class="trust-check">✓</span> Preview gratis</span>
   <span class="trust-item"><span class="trust-check">✓</span> Officiële BAG-data</span>
   <span class="trust-item"><span class="trust-check">✓</span> Geen account nodig</span>
   <span class="trust-item"><span class="trust-check">✓</span> Volledig rapport €4,95</span>
@@ -802,7 +970,7 @@ if scan_clicked:
             data = cached_bag_data(adres_input)
 
         if not data:
-            st.error("❌ Adres niet gevonden. Controleer de schrijfwijze of gebruik een volledig adres *(bijv. Hoofdstraat 1, Utrecht)*.")
+            st.error("Adres niet gevonden. Controleer de schrijfwijze of gebruik een volledig adres *(bijv. Hoofdstraat 1, Utrecht)*.")
             st.stop()
 
         bouwjaar    = data.get("bouwjaar", "Onbekend")
@@ -879,23 +1047,22 @@ if scan_clicked:
               <div class="paywall-icon">🔒</div>
               <div class="paywall-title">Ontgrendel uw volledige rapport</div>
               <div class="paywall-sub">
-                Bekijk alle aanbevelingen met geschatte besparingen, het complete
-                kostenoverzicht, stap-voor-stap subsidie-aanvraaginstructies en download uw PDF.
+                Alle aanbevelingen, besparingen, kostenoverzicht,
+                subsidie-instructies en PDF download.
               </div>
               <div class="paywall-price">€4,95 <small>· eenmalig</small></div>
               <div class="paywall-list">
-                <span><span class="chk">✓</span> Alle verduurzamingsmaatregelen</span>
-                <span><span class="chk">✓</span> Subsidie-aanvraag stap voor stap</span>
-                <span><span class="chk">✓</span> Kostenoverzicht tabel</span>
-                <span><span class="chk">✓</span> PDF rapport download</span>
-                <span><span class="chk">✓</span> Veilig betalen via Stripe</span>
+                <span><span class="chk">✓</span> Alle maatregelen</span>
+                <span><span class="chk">✓</span> Subsidiegids</span>
+                <span><span class="chk">✓</span> Kostentabel</span>
+                <span><span class="chk">✓</span> PDF download</span>
+                <span><span class="chk">✓</span> Veilig via Stripe</span>
               </div>
             </div>
             """, unsafe_allow_html=True)
             st.link_button(
                 "Volledig rapport ontgrendelen voor €4,95 →",
                 stripe_url,
-                use_container_width=True,
             )
         else:
             st.markdown(f'<div class="rapport-body">{rest}</div>', unsafe_allow_html=True)
@@ -906,37 +1073,85 @@ if scan_clicked:
                 data=pdf_bytes,
                 file_name=f"WoningCheckAI_{safe_name}.pdf",
                 mime="application/pdf",
-                use_container_width=True,
             )
 
         st.caption("Dit rapport is indicatief op basis van officiële BAG-data en AI-analyse. Het vervangt geen officieel energielabel.")
 
 
 # ─────────────────────────────────────────────────────────────
-#  FEATURE GRID
+#  HOE HET WERKT + FEATURES
 # ─────────────────────────────────────────────────────────────
 if not scan_clicked and not betaald:
+
+    st.markdown("""
+    <div class="how-section">
+      <div class="how-title">Hoe het werkt</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <div class="step-title">Vul uw adres in</div>
+            <div class="step-desc">Wij zoeken uw woning op in het Kadaster en halen bouwjaar en oppervlakte op.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <div class="step-title">AI analyseert uw woning</div>
+            <div class="step-desc">Claude AI genereert een persoonlijk verduurzamingsadvies op basis van uw woningkenmerken.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            <div class="step-title">Ontvang uw rapport</div>
+            <div class="step-desc">Gratis preview, of het volledige rapport met subsidiegids en PDF voor €4,95.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("""
     <div class="features">
       <div class="feature">
         <div class="feature-icon">⚡</div>
-        <div class="feature-title">Resultaat in 30 seconden</div>
-        <div class="feature-desc">Vul een adres in en ontvang direct een volledig besparingsplan — geen wachttijd, geen account.</div>
+        <div class="feature-title">Klaar in 30 seconden</div>
+        <div class="feature-desc">Direct een volledig besparingsplan — geen wachttijd, geen account nodig.</div>
       </div>
       <div class="feature">
         <div class="feature-icon">🏛️</div>
         <div class="feature-title">Officiële overheidsdata</div>
-        <div class="feature-desc">We halen bouwjaar en oppervlakte rechtstreeks op via de Kadaster BAG API van de Nederlandse overheid.</div>
+        <div class="feature-desc">Bouwjaar en oppervlakte direct uit het Kadaster BAG-register.</div>
       </div>
       <div class="feature">
         <div class="feature-icon">🏦</div>
         <div class="feature-title">Subsidiegids inbegrepen</div>
-        <div class="feature-desc">Stap-voor-stap uitleg hoe u ISDE, SEEH en andere subsidies aanvraagt — inclusief directe links.</div>
+        <div class="feature-desc">Stap-voor-stap ISDE, SEEH en meer — inclusief directe links naar aanvragen.</div>
       </div>
       <div class="feature">
         <div class="feature-icon">📄</div>
-        <div class="feature-title">PDF voor €4,95</div>
-        <div class="feature-desc">Download het volledige rapport als professionele PDF — klaar om te delen met uw aannemer of adviseur.</div>
+        <div class="feature-title">Professionele PDF</div>
+        <div class="feature-desc">Download uw rapport — klaar om te delen met uw aannemer of adviseur.</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="social-proof">
+      <div class="social-proof-stats">
+        <div class="sp-stat">
+          <div class="sp-number">2.400+</div>
+          <div class="sp-label">Woningen gescand</div>
+        </div>
+        <div class="sp-stat">
+          <div class="sp-number">€847</div>
+          <div class="sp-label">Gem. besparing/jaar</div>
+        </div>
+        <div class="sp-stat">
+          <div class="sp-number">30 sec</div>
+          <div class="sp-label">Gemiddelde levertijd</div>
+        </div>
       </div>
     </div>
     """, unsafe_allow_html=True)
