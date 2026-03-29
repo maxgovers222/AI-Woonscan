@@ -1,12 +1,14 @@
 import streamlit as st
 import datetime
+import os
+import urllib.parse
 from adres_bag_gegevens import get_bag_data
 from ai_architect import genereer_energie_advies
 from database import sla_scan_op, zoek_bestaand_rapport, is_supabase_actief
 from fpdf import FPDF
 
 # ─────────────────────────────────────────────────────────────
-#  PAGINA CONFIGURATIE  (moet als eerste Streamlit-aanroep staan)
+#  PAGINA CONFIGURATIE
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="WoningCheckAI – Gratis Energiescan",
@@ -14,6 +16,51 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed",
 )
+
+# ─────────────────────────────────────────────────────────────
+#  STRIPE HELPER
+#  Hoe het werkt:
+#  1. Gebruiker klikt op "Koop PDF voor €4,95"
+#  2. App stuurt hem naar een Stripe betaalpagina
+#  3. Na betaling stuurt Stripe hem terug naar onze app
+#     met ?betaald=ja&adres=... in de URL
+#  4. App detecteert die terugkeer en toont de downloadknop
+# ─────────────────────────────────────────────────────────────
+
+STRIPE_PAYMENT_LINK = os.getenv("STRIPE_PAYMENT_LINK", "")
+# Dit is de link die je in Stripe aanmaakt (begint met https://buy.stripe.com/...)
+# Zie instructies onderaan dit bestand
+
+
+def maak_stripe_url(adres: str) -> str:
+    """
+    Voegt het adres toe aan de Stripe betaallink als metadata.
+    Na betaling stuurt Stripe de gebruiker terug met dit adres in de URL,
+    zodat we weten voor welk adres er betaald is.
+    """
+    if not STRIPE_PAYMENT_LINK:
+        return ""
+    # We coderen het adres in de success URL zodat we het terugkrijgen
+    adres_encoded = urllib.parse.quote(adres)
+    app_url = os.getenv("APP_URL", "https://woningcheckai.nl")
+    success_url = f"{app_url}?betaald=ja&adres={adres_encoded}"
+    return f"{STRIPE_PAYMENT_LINK}?success_url={urllib.parse.quote(success_url)}"
+
+
+def controleer_betaling() -> tuple[bool, str]:
+    """
+    Controleert of de gebruiker zojuist terugkomt van Stripe.
+    Geeft (True, adres) terug als er betaald is, anders (False, "").
+
+    Hoe: Stripe stuurt de gebruiker terug naar de success_url die wij
+    hebben meegegeven. Die URL bevat ?betaald=ja&adres=...
+    Streamlit leest die parameters uit via st.query_params.
+    """
+    params = st.query_params
+    betaald = params.get("betaald", "") == "ja"
+    adres   = urllib.parse.unquote(params.get("adres", ""))
+    return betaald, adres
+
 
 # ─────────────────────────────────────────────────────────────
 #  PDF HELPER
@@ -52,7 +99,7 @@ def create_pdf(rapport_tekst: str, adres: str, bouwjaar, oppervlakte) -> bytes:
     pdf.cell(0, 7, f"Gebruiksoppervlakte: {oppervlakte} m2", ln=True)
     pdf.ln(5)
 
-    # Rapport body — strip markdown-symbolen die slecht renderen in FPDF
+    # Rapport body
     pdf.set_text_color(25, 25, 25)
     pdf.set_font("Arial", "", 11)
     safe_text = rapport_tekst.encode("latin-1", "replace").decode("latin-1")
@@ -75,7 +122,6 @@ def create_pdf(rapport_tekst: str, adres: str, bouwjaar, oppervlakte) -> bytes:
 
 # ─────────────────────────────────────────────────────────────
 #  GECACHEDE DATA-FUNCTIES
-#  Voorkomt herhaalde API-calls bij re-renders (bijv. download-klik)
 # ─────────────────────────────────────────────────────────────
 @st.cache_data(ttl=3600, show_spinner=False)
 def cached_bag_data(adres: str):
@@ -87,7 +133,7 @@ def cached_advies(bouwjaar, oppervlakte, woningtype: str) -> str:
 
 
 # ─────────────────────────────────────────────────────────────
-#  ENERGIELABEL SCHATTING  (heuristiek o.b.v. bouwjaar)
+#  ENERGIELABEL SCHATTING
 # ─────────────────────────────────────────────────────────────
 def schat_energielabel(bouwjaar) -> str:
     try:
@@ -114,6 +160,7 @@ st.markdown("""
     --navy-mid: #1A3A6B;
     --teal:     #0EA87E;
     --teal-lt:  #12C991;
+    --amber:    #F59E0B;
     --bg:       #F4F6FA;
     --surface:  #FFFFFF;
     --text:     #1C2333;
@@ -202,6 +249,48 @@ st.markdown("""
   .report-body td { padding:7px 12px; border-bottom:1px solid var(--border); }
   .report-body tr:nth-child(even) td { background:#F8FAFD; }
 
+  /* ── Betaalmuur blok ──────────────────────────────── */
+  .paywall {
+    background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+    border: 2px solid #F59E0B;
+    border-radius: var(--r);
+    padding: 28px 32px;
+    text-align: center;
+    margin-bottom: 22px;
+    box-shadow: 0 4px 20px rgba(245,158,11,.15);
+  }
+  .paywall-title {
+    font-family:'Syne',sans-serif; font-weight:800;
+    font-size:1.3rem; color:var(--navy); margin-bottom:8px;
+  }
+  .paywall-sub {
+    font-size:.93rem; color:#92400E; margin-bottom:20px; line-height:1.6;
+  }
+  .paywall-price {
+    font-family:'Syne',sans-serif; font-weight:800;
+    font-size:2rem; color:var(--navy);
+  }
+  .paywall-price span { font-size:1rem; font-weight:400; color:var(--muted); }
+  .paywall-features {
+    display:flex; justify-content:center; gap:20px;
+    flex-wrap:wrap; margin:16px 0 22px; font-size:.83rem; color:#78350F;
+  }
+  .pf { display:flex; align-items:center; gap:5px; }
+
+  /* ── Succes banner ────────────────────────────────── */
+  .succes-banner {
+    background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+    border: 2px solid var(--teal);
+    border-radius: var(--r);
+    padding: 20px 28px;
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .succes-banner h3 {
+    font-family:'Syne',sans-serif; color:#065F46; margin:0 0 6px;
+  }
+  .succes-banner p { color:#047857; margin:0; font-size:.9rem; }
+
   /* ── Trust bar ────────────────────────────────────── */
   .trust { display:flex; align-items:center; justify-content:center;
            gap:26px; padding:16px 0 2px; flex-wrap:wrap; }
@@ -251,15 +340,32 @@ st.markdown("""
     background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%) !important;
     border:none !important; border-radius:10px !important; color:#fff !important;
     font-family:'Syne',sans-serif !important; font-weight:700 !important;
-    font-size:1rem !important; padding:14px 24px !important;
+    font-size:1rem !important; padding:16px 24px !important;
     box-shadow:0 4px 16px rgba(15,40,80,.28) !important;
     transition:transform .15s,box-shadow .15s !important;
+    font-size:1.05rem !important;
   }
   div[data-testid="stDownloadButton"]>button:hover {
     transform:translateY(-2px) !important;
     box-shadow:0 8px 24px rgba(15,40,80,.38) !important;
   }
   [data-testid="stAlert"] { border-radius:10px !important; }
+
+  /* ── Stripe betaalknop ────────────────────────────── */
+  .stripe-btn {
+    display:block; width:100%;
+    background:linear-gradient(135deg,#F59E0B 0%,#D97706 100%);
+    color:#fff !important; text-decoration:none !important;
+    font-family:'Syne',sans-serif; font-weight:800; font-size:1.1rem;
+    padding:16px 24px; border-radius:10px; text-align:center;
+    box-shadow:0 4px 16px rgba(245,158,11,.40);
+    transition:transform .15s,box-shadow .15s;
+    cursor:pointer; border:none;
+  }
+  .stripe-btn:hover {
+    transform:translateY(-2px);
+    box-shadow:0 8px 24px rgba(245,158,11,.50);
+  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -269,11 +375,62 @@ st.markdown("""
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-  <div class="hero-badge">✦ Gratis &nbsp;·&nbsp; AI-gedreven &nbsp;·&nbsp; Officiële Kadaster BAG-data</div>
+  <div class="hero-badge">✦ Gratis rapport &nbsp;·&nbsp; AI-gedreven &nbsp;·&nbsp; Officiële Kadaster BAG-data</div>
   <div class="hero-logo">Woning<span>Check</span>AI</div>
   <div class="hero-sub">Vul een adres in — ontvang binnen seconden een persoonlijk verduurzamingsrapport</div>
 </div>
 """, unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────
+#  BETALING TERUGKEER DETECTIE
+#  Als Stripe de gebruiker terugstuurde na een betaling,
+#  tonen we direct de downloadknop voor dat adres.
+# ─────────────────────────────────────────────────────────────
+betaald, betaald_adres = controleer_betaling()
+
+if betaald and betaald_adres:
+    st.markdown("""
+    <div class="succes-banner">
+      <h3>✅ Betaling geslaagd!</h3>
+      <p>Bedankt voor uw aankoop. Uw PDF rapport staat hieronder klaar.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Haal het rapport op voor dit adres (uit database of cache)
+    with st.spinner("Rapport ophalen…"):
+        bag_data_betaald = cached_bag_data(betaald_adres)
+
+    if bag_data_betaald:
+        rapport_betaald = zoek_bestaand_rapport(betaald_adres)
+        if not rapport_betaald:
+            with st.spinner("Rapport genereren…"):
+                rapport_betaald = cached_advies(
+                    bag_data_betaald.get("bouwjaar", "Onbekend"),
+                    bag_data_betaald.get("oppervlakte", "Onbekend"),
+                    bag_data_betaald.get("woningtype", "Woning"),
+                )
+
+        pdf_bytes = create_pdf(
+            rapport_betaald,
+            betaald_adres,
+            bag_data_betaald.get("bouwjaar", "Onbekend"),
+            bag_data_betaald.get("oppervlakte", "Onbekend"),
+        )
+        safe_name = betaald_adres.replace(" ", "_").replace(",", "").replace("/", "-")
+
+        st.download_button(
+            label="📄  Download uw PDF Rapport",
+            data=pdf_bytes,
+            file_name=f"WoningCheckAI_{safe_name}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
+        st.caption("Sla de PDF op — u kunt hem altijd opnieuw downloaden door dit adres opnieuw in te voeren en te betalen.")
+    else:
+        st.error("Adres niet gevonden. Neem contact op via info@woningcheckai.nl")
+
+    st.markdown("---")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -290,10 +447,10 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("""
 <div class="trust">
-  <span class="ti"><span class="td"></span>Officiële RVO BAG-data</span>
+  <span class="ti"><span class="td"></span>Rapport gratis</span>
+  <span class="ti"><span class="td"></span>Officiële BAG-data</span>
   <span class="ti"><span class="td"></span>Claude AI analyse</span>
-  <span class="ti"><span class="td"></span>Geen account nodig</span>
-  <span class="ti"><span class="td"></span>PDF direct beschikbaar</span>
+  <span class="ti"><span class="td"></span>PDF voor €4,95</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -305,7 +462,7 @@ if scan_clicked:
     if not adres_input.strip():
         st.warning("Vul een adres in om door te gaan.")
     else:
-        # Stap 1: BAG data ophalen
+        # Stap 1: BAG data
         with st.spinner("Woningdata ophalen via Kadaster BAG…"):
             data = cached_bag_data(adres_input)
 
@@ -345,23 +502,23 @@ if scan_clicked:
         st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Stap 3: Controleer eerst of dit adres al eerder gescand is
+        # Stap 3: Rapport — eerst database checken
         bestaand_rapport = zoek_bestaand_rapport(adres_input)
-
         if bestaand_rapport:
             rapport = bestaand_rapport
-            st.info("💾 Dit adres is eerder gescand — rapport direct geladen uit database.")
+            st.info("💾 Dit adres is eerder gescand — rapport direct geladen.")
         else:
             with st.spinner("AI schrijft uw persoonlijk verduurzamingsplan…"):
                 rapport = cached_advies(bouwjaar, oppervlakte, woningtype)
 
+        # Stap 4: Rapport tonen (gratis)
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="card-title">🤖 &nbsp;Persoonlijk Verduurzamingsplan</div>', unsafe_allow_html=True)
         st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
         st.markdown(f'<div class="report-body">{rapport}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Stap 4: Opslaan in Supabase (silent — crasht app niet bij fout)
+        # Stap 5: Opslaan in Supabase
         sla_scan_op(
             adres=adres_input,
             bag_data=data,
@@ -369,49 +526,75 @@ if scan_clicked:
             energielabel=label,
         )
 
-        # Stap 5: PDF download
-        pdf_bytes = create_pdf(rapport, adres_input, bouwjaar, oppervlakte)
-        safe_name = adres_input.replace(" ", "_").replace(",", "").replace("/", "-")
+        # Stap 6: BETAALMUUR voor PDF
+        stripe_url = maak_stripe_url(adres_input)
 
-        st.download_button(
-            label="📄  Download volledig rapport als PDF",
-            data=pdf_bytes,
-            file_name=f"WoningCheckAI_{safe_name}.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-        )
+        if stripe_url:
+            # Stripe is geconfigureerd — toon betaalmuur
+            st.markdown(f"""
+            <div class="paywall">
+              <div class="paywall-title">📄 Download uw Persoonlijk PDF Rapport</div>
+              <div class="paywall-sub">
+                Het volledige rapport inclusief alle subsidie-aanvraaginstructies,<br>
+                kostenoverzicht en stap-voor-stap actieplan — klaar om te bewaren en te delen.
+              </div>
+              <div class="paywall-price">€4,95 <span>eenmalig</span></div>
+              <div class="paywall-features">
+                <span class="pf">✓ Volledige PDF direct beschikbaar</span>
+                <span class="pf">✓ Subsidie-aanvraaginstructies</span>
+                <span class="pf">✓ Kostenoverzicht tabel</span>
+                <span class="pf">✓ Veilig betalen via Stripe</span>
+              </div>
+              <a href="{stripe_url}" class="stripe-btn" target="_self">
+                🔒 &nbsp; Koop PDF Rapport voor €4,95
+              </a>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            # Stripe nog niet geconfigureerd — toon gewoon de downloadknop (testmodus)
+            pdf_bytes = create_pdf(rapport, adres_input, bouwjaar, oppervlakte)
+            safe_name = adres_input.replace(" ", "_").replace(",", "").replace("/", "-")
+            st.download_button(
+                label="📄  Download volledig rapport als PDF",
+                data=pdf_bytes,
+                file_name=f"WoningCheckAI_{safe_name}.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
+            st.caption("⚠️ Stripe nog niet geconfigureerd — PDF is tijdelijk gratis (testmodus).")
+
         st.caption(
-            "ℹ️ Dit rapport is indicatief en gegenereerd op basis van officiële BAG-data en AI-analyse. "
-            "Het vervangt geen officieel energielabel. Raadpleeg een erkend adviseur voor een EPA-maatwerkadvies."
+            "ℹ️ Dit rapport is indicatief op basis van officiële BAG-data en AI-analyse. "
+            "Het vervangt geen officieel energielabel."
         )
 
 
 # ─────────────────────────────────────────────────────────────
-#  FEATURE STRIP  (alleen zichtbaar vóór scan)
+#  FEATURE STRIP
 # ─────────────────────────────────────────────────────────────
-if not scan_clicked:
+if not scan_clicked and not betaald:
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("""
     <div class="features">
       <div class="feat">
         <div class="feat-icon">⚡</div>
-        <div class="feat-title">In 30 seconden</div>
-        <div class="feat-desc">Vul een adres in en ontvang direct een compleet besparingsplan.</div>
+        <div class="feat-title">Rapport gratis</div>
+        <div class="feat-desc">Vul een adres in en ontvang direct een volledig besparingsplan. Gratis.</div>
       </div>
       <div class="feat">
         <div class="feat-icon">📊</div>
         <div class="feat-title">Kadaster BAG-data</div>
-        <div class="feat-desc">We halen officiële bouwdata op via de Nederlandse overheids-API.</div>
+        <div class="feat-desc">Officiële bouwdata van de Nederlandse overheid als basis.</div>
       </div>
       <div class="feat">
-        <div class="feat-icon">🧠</div>
-        <div class="feat-title">Claude AI analyse</div>
-        <div class="feat-desc">Geprioriteerd advies met euro-besparingen en terugverdientijden.</div>
+        <div class="feat-icon">🏦</div>
+        <div class="feat-title">Subsidiegids</div>
+        <div class="feat-desc">Stap-voor-stap uitleg hoe u ISDE, SEEH en andere subsidies aanvraagt.</div>
       </div>
       <div class="feat">
         <div class="feat-icon">📄</div>
-        <div class="feat-title">PDF rapport</div>
-        <div class="feat-desc">Download uw persoonlijk rapport en deel het met uw aannemer.</div>
+        <div class="feat-title">PDF voor €4,95</div>
+        <div class="feat-desc">Download het volledige rapport als PDF om te bewaren of te delen met uw aannemer.</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
