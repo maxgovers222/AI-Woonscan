@@ -882,7 +882,7 @@ if not betaald:
 # ─────────────────────────────────────────────────────────────
 #  ZOEKFORMULIER
 # ─────────────────────────────────────────────────────────────
-st.markdown('<div style="text-align:center; font-size:.65rem; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:#7A8BA8; margin-bottom:18px; margin-top:44px;">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align:center; font-size:.65rem; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:#7A8BA8; margin-bottom:24px; margin-top:44px;">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
 
 adres_input = st.text_input(
     label="adres",
