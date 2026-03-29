@@ -1,202 +1,410 @@
 import streamlit as st
+import datetime
 from adres_bag_gegevens import get_bag_data
 from ai_architect import genereer_energie_advies
 from fpdf import FPDF
-import io
-import datetime
 
-# --- 1. PREMIUM CONFIGURATIE ---
+# ─────────────────────────────────────────────────────────────
+#  PAGINA CONFIGURATIE  (moet als eerste Streamlit-aanroep staan)
+# ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="WoningCheckAI.nl - Uw Slimme Energiescan",
-    page_icon="https://cdn-icons-png.flaticon.com/512/9437/9437502.png", # Gebruik je definitieve logo link
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="WoningCheckAI – Gratis Energiescan",
+    page_icon="🏡",
+    layout="centered",
+    initial_sidebar_state="collapsed",
 )
 
-# --- 2. CUSTOM CSS FOR ADVANCED BRANDING ---
-# We gebruiken custom CSS om Streamlit te forceren naar een professionele SaaS-look.
-st.markdown("""
-    <style>
-    /* Hoofdkleuren en Achtergrond */
-    .stApp {
-        background-color: #F4F7F6;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    }
-    
-    /* Kopteksten */
-    h1 { color: #1E3A8A !important; font-weight: 800 !important; }
-    h2 { color: #1A365D !important; }
-    h3 { color: #2D3748 !important; }
-
-    /* De Scan Knop - Groot, Groen, Opvallend */
-    .stButton>button {
-        width: 100%;
-        border-radius: 8px;
-        height: 3.5em;
-        background-color: #059669 !important; /* Groen */
-        color: white !important;
-        font-size: 1.2em !important;
-        font-weight: bold !important;
-        border: none !important;
-        transition: background-color 0.3s ease;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    .stButton>button:hover {
-        background-color: #047857 !important;
-    }
-
-    /* Resultaten Cards */
-    .metric-card {
-        background-color: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        border: 1px solid #E2E8F0;
-        text-align: center;
-    }
-    .metric-value {
-        font-size: 2.2em;
-        font-weight: 800;
-        color: #111827;
-    }
-    .metric-label {
-        font-size: 1em;
-        color: #6B7280;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    /* Het AI Rapport Vak */
-    .report-box {
-        background-color: white;
-        padding: 30px;
-        border-radius: 12px;
-        border: 1px solid #E2E8F0;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        line-height: 1.7;
-    }
-
-    /* De PDF Download Knop */
-    .stDownloadButton>button {
-        background-color: white !important;
-        color: #111827 !important;
-        border: 2px solid #E2E8F0 !important;
-        font-weight: 600 !important;
-    }
-    .stDownloadButton>button:hover {
-        background-color: #F9FAFB !important;
-        border-color: #D1D5DB !important;
-    }
-    
-    /* Verberg de Streamlit 'Made with Streamlit' footer */
-    footer {visibility: hidden;}
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 3. HELPER FUNCTIES (PDF & Caching) ---
-
-# We cachen de BAG data lookup om herhaalde verzoeken te versnellen
-@st.cache_data(ttl=3600) # Caches data for 1 hour
-def cached_bag_data(adres):
-    return get_bag_data(adres)
-
-def create_pdf(rapport_tekst, adres, data):
-    # (PDF code remains robust, maybe a small brand update)
+# ─────────────────────────────────────────────────────────────
+#  PDF HELPER
+# ─────────────────────────────────────────────────────────────
+def create_pdf(rapport_tekst: str, adres: str, bouwjaar, oppervlakte) -> bytes:
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", "B", 24)
-    pdf.set_text_color(5, 150, 105) # SaaS Groen
-    pdf.cell(0, 20, "WoningCheckAI", ln=True, align='C')
-    pdf.set_font("Arial", "I", 12)
-    pdf.set_text_color(107, 114, 128) # Grijs
-    pdf.cell(0, 10, f"Officieel Verduurzamingsrapport - {datetime.date.today()}", ln=True, align='C')
-    pdf.ln(10)
-    # ... (Rest van PDF data invoegen zoals in v2.0)
-    return pdf.output(dest='S')
+    pdf.set_margins(20, 20, 20)
 
-# --- 4. DE FRONT-END LAYOUT ---
+    # Header-blok
+    pdf.set_fill_color(15, 40, 80)
+    pdf.rect(0, 0, 210, 42, "F")
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font("Arial", "B", 20)
+    pdf.set_xy(0, 9)
+    pdf.cell(210, 12, "WoningCheckAI.nl", align="C", ln=True)
+    pdf.set_font("Arial", "", 10)
+    pdf.cell(210, 6, "Persoonlijk Verduurzamingsrapport", align="C", ln=True)
+    pdf.set_font("Arial", "I", 9)
+    pdf.set_text_color(180, 210, 255)
+    pdf.cell(210, 6, f"Gegenereerd op {datetime.date.today().strftime('%d %B %Y')}", align="C", ln=True)
 
-# A. Header & Navigatie
-with st.container():
-    col_logo, col_nav = st.columns([1, 4])
-    with col_logo:
-        st.image("https://cdn-icons-png.flaticon.com/512/9437/9437502.png", width=70) # Tijdelijk logo
-    with col_nav:
-        st.markdown("<h1 style='margin:0; padding-top:10px;'>WoningCheckAI.nl</h1>", unsafe_allow_html=True)
+    pdf.ln(12)
 
-st.divider()
+    # Adres & metadata
+    pdf.set_text_color(15, 40, 80)
+    pdf.set_font("Arial", "B", 13)
+    pdf.cell(0, 8, f"Adres: {adres}", ln=True)
+    pdf.set_draw_color(15, 40, 80)
+    pdf.set_line_width(0.4)
+    pdf.line(20, pdf.get_y(), 190, pdf.get_y())
+    pdf.ln(3)
+    pdf.set_font("Arial", "", 10)
+    pdf.set_text_color(80, 80, 80)
+    pdf.cell(60, 7, f"Bouwjaar: {bouwjaar}", ln=False)
+    pdf.cell(0, 7, f"Gebruiksoppervlakte: {oppervlakte} m2", ln=True)
+    pdf.ln(5)
 
-# B. Hero Section (De "Hook")
+    # Rapport body — strip markdown-symbolen die slecht renderen in FPDF
+    pdf.set_text_color(25, 25, 25)
+    pdf.set_font("Arial", "", 11)
+    safe_text = rapport_tekst.encode("latin-1", "replace").decode("latin-1")
+    for sym in ["##", "**", "__", "---", "```", "# "]:
+        safe_text = safe_text.replace(sym, "")
+    pdf.multi_cell(0, 7, safe_text)
+
+    # Footer
+    pdf.set_y(-18)
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(20, pdf.get_y(), 190, pdf.get_y())
+    pdf.set_font("Arial", "I", 8)
+    pdf.set_text_color(160, 160, 160)
+    pdf.cell(0, 8,
+             "WoningCheckAI.nl  |  AI-gegenereerd rapport  |  Alleen indicatief - geen officieel energielabel",
+             align="C")
+
+    return bytes(pdf.output())
+
+
+# ─────────────────────────────────────────────────────────────
+#  GECACHEDE DATA-FUNCTIES
+#  Voorkomt herhaalde API-calls bij re-renders (bijv. download-klik)
+# ─────────────────────────────────────────────────────────────
+@st.cache_data(ttl=3600, show_spinner=False)
+def cached_bag_data(adres: str):
+    return get_bag_data(adres)
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def cached_advies(bouwjaar, oppervlakte, woningtype: str) -> str:
+    return genereer_energie_advies(bouwjaar, oppervlakte, woningtype)
+
+
+# ─────────────────────────────────────────────────────────────
+#  ENERGIELABEL SCHATTING  (heuristiek o.b.v. bouwjaar)
+# ─────────────────────────────────────────────────────────────
+def schat_energielabel(bouwjaar) -> str:
+    try:
+        jaar = int(bouwjaar)
+    except (ValueError, TypeError):
+        return "?"
+    if jaar >= 2015: return "A"
+    if jaar >= 2000: return "B"
+    if jaar >= 1990: return "C"
+    if jaar >= 1975: return "D"
+    if jaar >= 1960: return "E"
+    return "F"
+
+
+# ─────────────────────────────────────────────────────────────
+#  CUSTOM CSS
+# ─────────────────────────────────────────────────────────────
 st.markdown("""
-    <div style='text-align: center; padding: 40px 0;'>
-        <h1 style='font-size: 3em;'>Ontdek Uw Besparingspotentieel in 30 Seconden</h1>
-        <h3 style='color: #4A5568; font-weight: 400;'>WoningCheckAI analyseert uw woningdata en geeft direct een professioneel adviesplan.</h3>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --navy:     #0F2850;
+    --navy-mid: #1A3A6B;
+    --teal:     #0EA87E;
+    --teal-lt:  #12C991;
+    --bg:       #F4F6FA;
+    --surface:  #FFFFFF;
+    --text:     #1C2333;
+    --muted:    #6B7A99;
+    --border:   #DDE3EF;
+    --r:        14px;
+    --sh:       0 4px 24px rgba(15,40,80,.09);
+    --sh-lg:    0 12px 48px rgba(15,40,80,.14);
+  }
+
+  html, body, [data-testid="stAppViewContainer"] {
+    background: var(--bg) !important;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+  }
+  [data-testid="stHeader"] { background: transparent !important; }
+  footer, #MainMenu { display: none !important; }
+
+  /* ── Hero ─────────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 55%, #1E4D8C 100%);
+    border-radius: var(--r); padding: 52px 40px 46px;
+    margin-bottom: 28px; text-align: center;
+    position: relative; overflow: hidden; box-shadow: var(--sh-lg);
+  }
+  .hero::before {
+    content:''; position:absolute; top:-70px; right:-70px;
+    width:260px; height:260px; border-radius:50%;
+    background:rgba(14,168,126,.11);
+  }
+  .hero::after {
+    content:''; position:absolute; bottom:-90px; left:-50px;
+    width:220px; height:220px; border-radius:50%;
+    background:rgba(255,255,255,.04);
+  }
+  .hero-badge {
+    display:inline-block;
+    background:rgba(14,168,126,.18); border:1px solid rgba(14,168,126,.40);
+    color:var(--teal-lt); font-size:.71rem; font-weight:500;
+    letter-spacing:1.3px; text-transform:uppercase;
+    padding:4px 14px; border-radius:999px; margin-bottom:18px;
+  }
+  .hero-logo {
+    font-family:'Syne',sans-serif; font-weight:800;
+    font-size:2.3rem; color:#fff; letter-spacing:-.5px; line-height:1;
+  }
+  .hero-logo span { color:var(--teal-lt); }
+  .hero-sub { font-weight:300; font-size:1.05rem; color:rgba(255,255,255,.70); margin-top:10px; }
+
+  /* ── Cards ────────────────────────────────────────── */
+  .card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--r); padding:30px 32px;
+    box-shadow:var(--sh); margin-bottom:22px;
+  }
+  .card-title {
+    font-family:'Syne',sans-serif; font-weight:700; font-size:1.1rem;
+    color:var(--navy); border-bottom:2px solid var(--border);
+    padding-bottom:14px; margin-bottom:20px;
+  }
+
+  /* ── Metric pills ─────────────────────────────────── */
+  .pills { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .pill {
+    flex:1; min-width:110px; background:var(--bg);
+    border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; text-align:center;
+  }
+  .pill-lbl { font-size:.68rem; font-weight:500; letter-spacing:.9px;
+              text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .pill-val { font-family:'Syne',sans-serif; font-weight:700;
+              font-size:1.45rem; color:var(--navy); line-height:1; }
+  .pill-unit { font-size:.78rem; color:var(--muted); margin-top:3px; }
+
+  /* ── Accent bar ───────────────────────────────────── */
+  .accent { height:4px; border-radius:4px; margin-bottom:22px;
+            background:linear-gradient(90deg,var(--teal),var(--teal-lt)); }
+
+  /* ── Report body ──────────────────────────────────── */
+  .report-body { font-size:.97rem; line-height:1.78; color:var(--text); }
+  .report-body h2,.report-body h3 {
+    font-family:'Syne',sans-serif; color:var(--navy); margin-top:1.3em;
+  }
+  .report-body table { width:100%; border-collapse:collapse; font-size:.88rem; margin:1em 0; }
+  .report-body th { background:var(--navy); color:#fff; padding:8px 12px; text-align:left; }
+  .report-body td { padding:7px 12px; border-bottom:1px solid var(--border); }
+  .report-body tr:nth-child(even) td { background:#F8FAFD; }
+
+  /* ── Trust bar ────────────────────────────────────── */
+  .trust { display:flex; align-items:center; justify-content:center;
+           gap:26px; padding:16px 0 2px; flex-wrap:wrap; }
+  .ti { display:flex; align-items:center; gap:7px; font-size:.80rem; color:var(--muted); }
+  .td { width:7px; height:7px; background:var(--teal); border-radius:50%; flex-shrink:0; }
+
+  /* ── Feature strip ────────────────────────────────── */
+  .features { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:28px; }
+  .feat {
+    flex:1; min-width:140px; background:var(--surface);
+    border:1px solid var(--border); border-radius:12px;
+    padding:22px 20px; box-shadow:var(--sh);
+  }
+  .feat-icon { font-size:1.5rem; margin-bottom:10px; }
+  .feat-title { font-family:'Syne',sans-serif; font-weight:700;
+                font-size:.95rem; color:var(--navy); margin-bottom:6px; }
+  .feat-desc { font-size:.83rem; color:var(--muted); line-height:1.5; }
+
+  /* ── Widget overrides ─────────────────────────────── */
+  div[data-testid="stTextInput"] input {
+    border:2px solid var(--border) !important; border-radius:10px !important;
+    padding:14px 18px !important; font-size:1rem !important;
+    font-family:'DM Sans',sans-serif !important; background:#FAFBFE !important;
+    color:var(--text) !important; transition:border-color .2s,box-shadow .2s;
+  }
+  div[data-testid="stTextInput"] input:focus {
+    border-color:var(--teal) !important;
+    box-shadow:0 0 0 3px rgba(14,168,126,.14) !important;
+  }
+  div[data-testid="stTextInput"] input::placeholder { color:var(--muted) !important; }
+
+  div[data-testid="stButton"]>button {
+    width:100%;
+    background:linear-gradient(135deg,var(--teal) 0%,#0C9A70 100%) !important;
+    border:none !important; border-radius:10px !important; color:#fff !important;
+    font-family:'Syne',sans-serif !important; font-weight:700 !important;
+    font-size:1rem !important; padding:14px 24px !important;
+    box-shadow:0 4px 16px rgba(14,168,126,.33) !important; margin-top:4px;
+    transition:transform .15s,box-shadow .15s !important;
+  }
+  div[data-testid="stButton"]>button:hover {
+    transform:translateY(-2px) !important;
+    box-shadow:0 8px 24px rgba(14,168,126,.44) !important;
+  }
+  div[data-testid="stDownloadButton"]>button {
+    width:100%;
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%) !important;
+    border:none !important; border-radius:10px !important; color:#fff !important;
+    font-family:'Syne',sans-serif !important; font-weight:700 !important;
+    font-size:1rem !important; padding:14px 24px !important;
+    box-shadow:0 4px 16px rgba(15,40,80,.28) !important;
+    transition:transform .15s,box-shadow .15s !important;
+  }
+  div[data-testid="stDownloadButton"]>button:hover {
+    transform:translateY(-2px) !important;
+    box-shadow:0 8px 24px rgba(15,40,80,.38) !important;
+  }
+  [data-testid="stAlert"] { border-radius:10px !important; }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────
+#  HERO
+# ─────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="hero">
+  <div class="hero-badge">✦ Gratis &nbsp;·&nbsp; AI-gedreven &nbsp;·&nbsp; Officiële Kadaster BAG-data</div>
+  <div class="hero-logo">Woning<span>Check</span>AI</div>
+  <div class="hero-sub">Vul een adres in — ontvang binnen seconden een persoonlijk verduurzamingsrapport</div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────
+#  ZOEKFORMULIER
+# ─────────────────────────────────────────────────────────────
+st.markdown('<div class="card">', unsafe_allow_html=True)
+adres_input = st.text_input(
+    label="adres",
+    label_visibility="collapsed",
+    placeholder="Bijv. Keizersgracht 123, Amsterdam",
+)
+scan_clicked = st.button("⚡  Genereer Gratis Energiescan", use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown("""
+<div class="trust">
+  <span class="ti"><span class="td"></span>Officiële RVO BAG-data</span>
+  <span class="ti"><span class="td"></span>Claude AI analyse</span>
+  <span class="ti"><span class="td"></span>Geen account nodig</span>
+  <span class="ti"><span class="td"></span>PDF direct beschikbaar</span>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────
+#  VERWERKING
+# ─────────────────────────────────────────────────────────────
+if scan_clicked:
+    if not adres_input.strip():
+        st.warning("Vul een adres in om door te gaan.")
+    else:
+        # Stap 1: BAG data ophalen
+        with st.spinner("Woningdata ophalen via Kadaster BAG…"):
+            data = cached_bag_data(adres_input)
+
+        if not data:
+            st.error(
+                "❌ Adres niet gevonden. Controleer de schrijfwijze of gebruik een volledig adres "
+                "*(bijv. Hoofdstraat 1, Utrecht)*."
+            )
+            st.stop()
+
+        bouwjaar    = data.get("bouwjaar", "Onbekend")
+        oppervlakte = data.get("oppervlakte", "Onbekend")
+        woningtype  = data.get("woningtype", "Woning")
+        label       = schat_energielabel(bouwjaar)
+
+        # Stap 2: Kaart + metrics
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown(f'<div class="card-title">📍 &nbsp;{adres_input}</div>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="pills">
+          <div class="pill">
+            <div class="pill-lbl">Bouwjaar</div>
+            <div class="pill-val">{bouwjaar}</div>
+          </div>
+          <div class="pill">
+            <div class="pill-lbl">Oppervlak</div>
+            <div class="pill-val">{oppervlakte}</div>
+            <div class="pill-unit">m²</div>
+          </div>
+          <div class="pill">
+            <div class="pill-lbl">Gesch. label</div>
+            <div class="pill-val">{label}</div>
+            <div class="pill-unit">indicatief</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Stap 3: AI rapport  — correcte aanroep met losse argumenten
+        with st.spinner("AI schrijft uw persoonlijk verduurzamingsplan…"):
+            rapport = cached_advies(bouwjaar, oppervlakte, woningtype)
+
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">🤖 &nbsp;Persoonlijk Verduurzamingsplan</div>', unsafe_allow_html=True)
+        st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="report-body">{rapport}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Stap 4: PDF download
+        pdf_bytes = create_pdf(rapport, adres_input, bouwjaar, oppervlakte)
+        safe_name = adres_input.replace(" ", "_").replace(",", "").replace("/", "-")
+
+        st.download_button(
+            label="📄  Download volledig rapport als PDF",
+            data=pdf_bytes,
+            file_name=f"WoningCheckAI_{safe_name}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
+        st.caption(
+            "ℹ️ Dit rapport is indicatief en gegenereerd op basis van officiële BAG-data en AI-analyse. "
+            "Het vervangt geen officieel energielabel. Raadpleeg een erkend adviseur voor een EPA-maatwerkadvies."
+        )
+
+
+# ─────────────────────────────────────────────────────────────
+#  FEATURE STRIP  (alleen zichtbaar vóór scan)
+# ─────────────────────────────────────────────────────────────
+if not scan_clicked:
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="features">
+      <div class="feat">
+        <div class="feat-icon">⚡</div>
+        <div class="feat-title">In 30 seconden</div>
+        <div class="feat-desc">Vul een adres in en ontvang direct een compleet besparingsplan.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">Kadaster BAG-data</div>
+        <div class="feat-desc">We halen officiële bouwdata op via de Nederlandse overheids-API.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">🧠</div>
+        <div class="feat-title">Claude AI analyse</div>
+        <div class="feat-desc">Geprioriteerd advies met euro-besparingen en terugverdientijden.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">📄</div>
+        <div class="feat-title">PDF rapport</div>
+        <div class="feat-desc">Download uw persoonlijk rapport en deel het met uw aannemer.</div>
+      </div>
     </div>
     """, unsafe_allow_html=True)
 
-# C. De Input Zone (Gecentreerd)
-col_space1, col_input, col_space2 = st.columns([1, 2, 1])
-with col_input:
-    adres_input = st.text_input("Voer uw volledige adres in:", placeholder="Bijv. Abel Eppensstraat 1, Delfzijl", label_visibility="collapsed")
-    st.write(" ") # Padding
-    scan_button = st.button("🚀 Start Uw Gratis Energiescan")
-
-# D. Resultaten Zone (Alleen tonen na scan)
-if scan_button:
-    if not adres_input:
-        st.error("⚠️ Voer eerst een geldig adres in.")
-    else:
-        with st.status("Verbinding maken met Kadaster...", expanded=True) as status:
-            data = cached_bag_data(adres_input)
-            
-            if data:
-                status.write("🤖 AI berekent besparingsmogelijkheden...")
-                status.update(label="Analyse voltooid!", state="complete", expanded=False)
-                
-                st.markdown("## 📊 Uw Woningkenmerken")
-                # Premium Metrics Layout
-                m1, m2, m3, m4 = st.columns(4)
-                with m1: st.markdown(f"<div class='metric-card'><div class='metric-value'>{data['bouwjaar']}</div><div class='metric-label'>Bouwjaar</div></div>", unsafe_allow_html=True)
-                with m2: st.markdown(f"<div class='metric-card'><div class='metric-value'>{data['oppervlakte']} m²</div><div class='metric-label'>Oppervlakte</div></div>", unsafe_allow_html=True)
-                with m3: st.markdown(f"<div class='metric-card'><div class='metric-value'>Woning</div><div class='metric-label'>Type</div></div>", unsafe_allow_html=True)
-                with m4: st.markdown(f"<div class='metric-card'><div class='metric-value'>A</div><div class='metric-label'>Geschat Label</div></div>", unsafe_allow_html=True)
-                
-                st.divider()
-                
-                # E. Het AI Rapport
-                st.markdown("## 📝 Uw Persoonlijk Besparingsplan")
-                with st.spinner("Uw gedetailleerde rapport wordt geschreven..."):
-                    advies = genereer_energie_advies(data)
-                    st.markdown(f"<div class='report-box'>{advies}</div>", unsafe_allow_html=True)
-                    st.write(" ") # Padding
-                    
-                    # F. Download Knop
-                    col_pdf_space, col_pdf_btn = st.columns([2, 1])
-                    with col_pdf_btn:
-                        pdf_data = create_pdf(advies, adres_input, data)
-                        st.download_button(
-                            label="📩 Download Volledig Rapport (PDF)",
-                            data=pdf_data,
-                            file_name=f"WoningCheckAI_{adres_input}.pdf",
-                            mime="application/pdf"
-                        )
-                        st.success("Uw professionele rapport is klaar!")
-            else:
-                st.error("⚠️ We konden geen gegevens vinden voor dit adres. Controleer de spelling.")
-
-# F. Vertrouwenssignalen (Alleen tonen als er NIET gescand wordt)
-if not scan_button:
-    st.divider()
-    st.markdown("## 💡 Waarom WoningCheckAI?")
-    c1, c2, c3 = st.columns(3)
-    c1.markdown("### ⚡ Snel\nOntvang uw volledige verduurzamingsplan binnen 30 seconden.")
-    c2.markdown("### 📊 Betrouwbaar\nWe gebruiken officiële data van het Kadaster (BAG).")
-    c3.markdown("### 🧠 Slim\nHet advies wordt geschreven door de nieuwste generatie AI.")
-
-# G. Footer
-st.divider()
-col_f1, col_f2 = st.columns(2)
-with col_f1:
-    st.write("© 2026 WoningCheckAI.nl")
-with col_f2:
-    st.write("Algemene Voorwaarden | Privacy Policy | Contact")
+# Footer
+st.markdown("""
+<div style="text-align:center; padding:24px 0 8px; font-size:.78rem; color:#9CA3AF;">
+  © 2026 WoningCheckAI.nl &nbsp;·&nbsp; Alle rechten voorbehouden<br>
+  <span style="opacity:.6;">Niet gelieerd aan de Nederlandse overheid · Indicatief advies</span>
+</div>
+""", unsafe_allow_html=True)
