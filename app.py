@@ -13,7 +13,7 @@ from fpdf import FPDF
 st.set_page_config(
     page_title="WoningCheckAI – Gratis Energiescan",
     page_icon="🏡",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="collapsed",
 )
 
@@ -127,69 +127,69 @@ if "huidig_oppervlakte" not in st.session_state:
 
 
 # ─────────────────────────────────────────────────────────────
-#  CSS — Professional Light / Navy & Emerald
+#  CSS — Professionele, strakke layout
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Serif:ital@0;1&family=Figtree:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap');
 
 :root {
-  /* Brand */
-  --navy:       #0B1D3A;
-  --navy-mid:   #132E5B;
-  --navy-lt:    #1E4D8C;
-  --accent:     #0EA56F;
-  --accent-dk:  #0A8A5C;
-  --accent-lt:  #E7F9F1;
-  --warm:       #F5A623;
-  --warm-lt:    #FFF8EC;
-  /* Backgrounds */
-  --bg:         #F6F8FB;
-  --surface:    #FFFFFF;
-  --surface-2:  #F0F4FA;
-  /* Text */
-  --text:       #1A1F2E;
-  --text-2:     #3D4663;
-  --muted:      #6B7896;
-  /* Borders */
-  --border:     #E4E9F2;
-  --border-h:   #CDD5E3;
-  /* Shadows */
-  --shadow-s:   0 1px 3px rgba(11,29,58,.05), 0 4px 14px rgba(11,29,58,.07);
-  --shadow-m:   0 2px 6px rgba(11,29,58,.05), 0 10px 28px rgba(11,29,58,.09);
-  --shadow-l:   0 4px 10px rgba(11,29,58,.05), 0 20px 48px rgba(11,29,58,.11);
-  /* Shape */
-  --radius:     14px;
-  --radius-lg:  22px;
+  --navy:      #0B1D3A;
+  --navy-mid:  #132E5B;
+  --navy-lt:   #1E4D8C;
+  --accent:    #0EA56F;
+  --accent-dk: #0A8A5C;
+  --accent-lt: #E7F9F1;
+  --warm:      #F5A623;
+  --warm-lt:   #FFF8EC;
+  --bg:        #F6F8FB;
+  --surface:   #FFFFFF;
+  --text:      #1A1F2E;
+  --text-2:    #3D4663;
+  --muted:     #6B7896;
+  --border:    #E4E9F2;
+  --border-h:  #CDD5E3;
+  --radius:    12px;
+  --radius-lg: 20px;
+  --shadow-s:  0 1px 2px rgba(11,29,58,.04), 0 2px 8px rgba(11,29,58,.06);
+  --shadow-m:  0 2px 4px rgba(11,29,58,.04), 0 8px 24px rgba(11,29,58,.08);
+  --shadow-l:  0 4px 8px rgba(11,29,58,.04), 0 16px 40px rgba(11,29,58,.10);
 }
 
+/* ── Reset & base ─────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body,
 [data-testid="stAppViewContainer"],
 .stApp {
   background: var(--bg) !important;
-  font-family: 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
   color: var(--text) !important;
 }
 
-/* Hide Streamlit chrome */
+/* Verberg Streamlit chrome */
 [data-testid="stHeader"],
 [data-testid="stToolbar"],
 [data-testid="stDecoration"],
 footer, #MainMenu,
 .stDeployButton { display: none !important; }
 
-[data-testid="stMain"] { background: var(--bg) !important; }
+/* ── KERNFIX: beperk breedte ──────────────────────── */
+[data-testid="stMain"] {
+  background: var(--bg) !important;
+}
 
 .block-container,
 [data-testid="stMainBlockContainer"] {
-  max-width: 780px !important;
+  max-width: 860px !important;
   margin: 0 auto !important;
-  padding: 0 36px 100px !important;
+  padding: 0 20px 60px !important;
 }
 
-[data-testid="stVerticalBlock"] { gap: 0.4rem !important; }
+/* Verwijder lege ruimtes */
+[data-testid="stVerticalBlock"] {
+  gap: 0.7rem !important;
+}
 [data-testid="stElementContainer"]:has(> div:empty),
 [data-testid="stVerticalBlock"] > div:empty,
 .element-container:empty {
@@ -200,47 +200,51 @@ footer, #MainMenu,
   min-height: 0 !important;
 }
 
-/* ── Navbar ───────────────────────────────────────── */
+/* ── Navigatiebalk ────────────────────────────────── */
 .navbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 26px 0 28px;
+  padding: 18px 0 20px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 56px;
+  margin-bottom: 32px;
 }
 .nav-logo {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: 'Playfair Display', serif;
   font-weight: 800;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   color: var(--navy);
-  letter-spacing: -0.4px;
+  letter-spacing: -0.3px;
   line-height: 1;
 }
 .nav-logo em {
-  font-style: normal;
+  font-style: italic;
   color: var(--accent);
 }
-.nav-pills { display: flex; align-items: center; gap: 8px; }
+.nav-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .nav-badge {
   background: var(--accent-lt);
   color: var(--accent);
-  font-size: .6rem;
+  font-size: .62rem;
   font-weight: 700;
-  letter-spacing: .8px;
+  letter-spacing: .5px;
   text-transform: uppercase;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid rgba(14,165,111,.15);
 }
 .nav-secure {
   background: var(--warm-lt);
   color: var(--warm);
-  font-size: .6rem;
+  font-size: .62rem;
   font-weight: 700;
-  letter-spacing: .8px;
+  letter-spacing: .5px;
   text-transform: uppercase;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid rgba(245,166,35,.15);
 }
@@ -248,54 +252,71 @@ footer, #MainMenu,
 /* ── Hero ─────────────────────────────────────────── */
 .hero {
   text-align: center;
-  padding: 32px 0 60px;
+  padding: 4px 0 32px;
 }
 .hero-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: .63rem;
+  gap: 7px;
+  font-size: .68rem;
   font-weight: 700;
   color: var(--accent);
-  letter-spacing: .9px;
+  letter-spacing: .7px;
   text-transform: uppercase;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
   background: var(--accent-lt);
-  padding: 6px 16px 6px 12px;
+  padding: 5px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(14,165,111,.15);
+  border: 1px solid rgba(14,165,111,.12);
 }
 .hero-eyebrow-dot {
-  width: 6px; height: 6px;
+  width: 5px; height: 5px;
   background: var(--accent);
   border-radius: 50%;
-  animation: hpulse 2.8s ease-in-out infinite;
+  animation: pulse 2.5s ease-in-out infinite;
 }
-@keyframes hpulse {
+@keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: .35; transform: scale(1.7); }
+  50% { opacity: .4; transform: scale(1.4); }
 }
 .hero-title {
-  font-family: 'Instrument Serif', serif;
-  font-weight: 400;
-  font-size: clamp(2.1rem, 5.5vw, 3.2rem);
+  font-family: 'Playfair Display', serif;
+  font-weight: 800;
+  font-size: clamp(1.7rem, 4.5vw, 2.4rem);
   color: var(--navy);
-  line-height: 1.14;
-  letter-spacing: -0.3px;
-  margin-bottom: 20px;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  margin-bottom: 14px;
 }
 .hero-title em {
   font-style: italic;
   color: var(--accent);
 }
 .hero-sub {
-  font-size: 1.02rem;
-  color: var(--text-2);
+  font-size: .95rem;
+  color: var(--muted);
   font-weight: 400;
-  line-height: 1.72;
-  max-width: 520px;
+  line-height: 1.6;
+  max-width: 460px;
   margin: 0 auto;
-  text-align: center;
+}
+
+/* ── Zoekbox ──────────────────────────────────────── */
+.search-wrap {
+  background: var(--surface);
+  border: 1.5px solid var(--border-h);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px 14px;
+  box-shadow: var(--shadow-m);
+  margin-bottom: 14px;
+}
+.search-label {
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
 }
 
 /* ── Trust strip ──────────────────────────────────── */
@@ -304,19 +325,24 @@ footer, #MainMenu,
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 10px 26px;
-  margin-top: 18px;
-  margin-bottom: 72px;
+  gap: 4px 14px;
+  margin-bottom: 36px;
+  padding: 0 4px;
 }
 .trust-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   font-size: .72rem;
   color: var(--muted);
   font-weight: 500;
+  white-space: nowrap;
 }
-.trust-check { color: var(--accent); font-size: .78rem; font-weight: 700; }
+.trust-check {
+  color: var(--accent);
+  font-size: .8rem;
+  font-weight: 700;
+}
 
 /* ── Resultaat card ───────────────────────────────── */
 .result-card {
@@ -324,139 +350,127 @@ footer, #MainMenu,
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: var(--shadow-m);
-  margin-bottom: 20px;
+  box-shadow: var(--shadow-s);
+  margin-bottom: 14px;
 }
 .result-card-header {
   background: var(--navy);
-  padding: 16px 22px;
+  padding: 13px 18px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .result-card-header-title {
-  font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 600;
-  font-size: .9rem;
+  font-size: .86rem;
   color: #fff;
 }
-.result-card-body { padding: 24px; }
+.result-card-body { padding: 18px; }
 
 /* ── Metric pills ─────────────────────────────────── */
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  gap: 10px;
 }
-@media (max-width: 480px) { .metrics { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+  .metrics { grid-template-columns: 1fr; }
+}
 .metric {
   background: var(--bg);
   border: 1.5px solid var(--border);
-  border-radius: 12px;
-  padding: 18px 14px;
+  border-radius: 10px;
+  padding: 12px;
   text-align: center;
-  transition: border-color .2s, box-shadow .2s;
-}
-.metric:hover {
-  border-color: var(--border-h);
-  box-shadow: var(--shadow-s);
 }
 .metric-label {
-  font-size: .6rem;
+  font-size: .62rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: .8px;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 .metric-value {
-  font-family: 'Bricolage Grotesque', sans-serif;
-  font-weight: 800;
-  font-size: 1.75rem;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 1.4rem;
   color: var(--navy);
   line-height: 1.1;
 }
 .metric-unit {
-  font-size: .65rem;
+  font-size: .68rem;
   color: var(--muted);
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
-/* ── Rapport card ─────────────────────────────────── */
+/* ── Rapport ──────────────────────────────────────── */
 .rapport-card {
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: var(--shadow-m);
-  margin-bottom: 20px;
+  box-shadow: var(--shadow-s);
+  margin-bottom: 14px;
 }
 .rapport-header {
-  padding: 17px 22px;
+  padding: 14px 18px;
   border-bottom: 1.5px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--surface);
 }
 .rapport-header-title {
-  font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 700;
-  font-size: .92rem;
+  font-size: .9rem;
   color: var(--text);
 }
 .rapport-badge {
   background: var(--accent-lt);
   color: var(--accent);
-  font-size: .6rem;
+  font-size: .62rem;
   font-weight: 700;
-  padding: 4px 11px;
+  padding: 3px 9px;
   border-radius: 999px;
-  letter-spacing: .5px;
-  text-transform: uppercase;
-  border: 1px solid rgba(14,165,111,.18);
+  letter-spacing: .3px;
 }
 .rapport-body {
-  padding: 28px 30px 26px;
-  font-size: .92rem;
-  line-height: 1.82;
+  padding: 20px 22px 18px;
+  font-size: .9rem;
+  line-height: 1.72;
   color: var(--text-2);
 }
 .rapport-body h1, .rapport-body h2 {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: var(--navy);
-  font-size: 1.08rem;
-  margin: 1.8em 0 .6em;
-  padding-bottom: 8px;
+  font-size: 1.1rem;
+  margin: 1.3em 0 .45em;
+  padding-bottom: 5px;
   border-bottom: 2px solid var(--border);
 }
 .rapport-body h3 {
-  font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 700;
   color: var(--text);
-  font-size: .96rem;
-  margin: 1.4em 0 .45em;
+  font-size: .92rem;
+  margin: 1.1em 0 .3em;
 }
 .rapport-body strong { color: var(--text); font-weight: 700; }
-.rapport-body a { color: var(--accent); text-decoration: underline; }
-.rapport-body ul { padding-left: 22px; margin: .6em 0; }
-.rapport-body li { margin-bottom: 5px; }
+.rapport-body ul { padding-left: 18px; margin: .4em 0; }
+.rapport-body li { margin-bottom: 3px; }
 .rapport-body table {
   width: 100%; border-collapse: collapse;
-  font-size: .82rem; margin: 1.4em 0;
-  border-radius: 10px; overflow: hidden;
-  border: 1.5px solid var(--border);
+  font-size: .8rem; margin: 1em 0;
+  border-radius: 8px; overflow: hidden;
 }
 .rapport-body th {
-  background: var(--navy);
-  color: #fff;
-  padding: 11px 14px; text-align: left;
-  font-weight: 700; font-size: .72rem;
-  letter-spacing: .4px; text-transform: uppercase;
+  background: var(--navy); color: #fff;
+  padding: 8px 10px; text-align: left;
+  font-weight: 600; font-size: .74rem;
+  letter-spacing: .2px;
 }
 .rapport-body td {
-  padding: 10px 14px;
+  padding: 7px 10px;
   border-bottom: 1px solid var(--border);
   color: var(--text-2);
 }
@@ -466,52 +480,51 @@ footer, #MainMenu,
 .preview-wrap {
   position: relative;
   overflow: hidden;
-  max-height: 320px;
+  max-height: 300px;
 }
 .preview-wrap::after {
   content: '';
-  position: absolute; bottom: 0; left: 0; right: 0; height: 140px;
+  position: absolute; bottom: 0; left: 0; right: 0; height: 120px;
   background: linear-gradient(transparent, var(--surface));
   pointer-events: none;
 }
 
 /* ── Betaalmuur ───────────────────────────────────── */
 .paywall {
-  background: linear-gradient(145deg, #F0F6FF 0%, #E4EEFA 100%);
+  background: linear-gradient(145deg, #F0F6FF 0%, #E0ECFA 100%);
   border: 1.5px solid #B8D0F0;
   border-radius: var(--radius);
-  padding: 36px 30px;
+  padding: 26px 22px;
   text-align: center;
-  margin-bottom: 14px;
-}
-.paywall-icon { font-size: 1.8rem; margin-bottom: 12px; }
-.paywall-title {
-  font-family: 'Bricolage Grotesque', sans-serif;
-  font-weight: 800;
-  font-size: 1.4rem;
-  color: var(--navy);
   margin-bottom: 10px;
-  letter-spacing: -0.3px;
+}
+.paywall-icon { font-size: 1.5rem; margin-bottom: 8px; }
+.paywall-title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--navy);
+  margin-bottom: 8px;
 }
 .paywall-sub {
-  font-size: .87rem;
+  font-size: .84rem;
   color: var(--text-2);
-  line-height: 1.65;
-  margin-bottom: 20px;
-  max-width: 440px;
+  line-height: 1.55;
+  margin-bottom: 14px;
+  max-width: 400px;
   margin-left: auto;
   margin-right: auto;
 }
 .paywall-price {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: 'Playfair Display', serif;
   font-weight: 800;
-  font-size: 2.5rem;
+  font-size: 1.9rem;
   color: var(--navy);
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   line-height: 1;
 }
 .paywall-price small {
-  font-family: 'Figtree', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: .78rem;
   font-weight: 400;
   color: var(--muted);
@@ -520,12 +533,16 @@ footer, #MainMenu,
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px 20px;
-  margin-bottom: 24px;
-  font-size: .78rem;
+  gap: 5px 14px;
+  margin-bottom: 18px;
+  font-size: .76rem;
   color: var(--text-2);
 }
-.paywall-list span { display: flex; align-items: center; gap: 5px; }
+.paywall-list span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .paywall-list .chk { color: var(--accent); font-weight: 700; }
 
 /* ── Succes banner ────────────────────────────────── */
@@ -533,75 +550,69 @@ footer, #MainMenu,
   background: linear-gradient(145deg, #ECFDF5 0%, #D1FAE5 100%);
   border: 1.5px solid #86EFAC;
   border-radius: var(--radius);
-  padding: 22px 24px;
+  padding: 18px 20px;
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 18px;
 }
-.succes-icon { font-size: 1.5rem; flex-shrink: 0; }
-.succes-title {
-  font-family: 'Bricolage Grotesque', sans-serif;
-  font-weight: 700;
-  color: #065F46;
-  font-size: .9rem;
-  margin-bottom: 3px;
-}
-.succes-sub { font-size: .82rem; color: #047857; line-height: 1.55; }
+.succes-icon { font-size: 1.4rem; flex-shrink: 0; }
+.succes-title { font-weight: 700; color: #065F46; font-size: .88rem; margin-bottom: 2px; }
+.succes-sub { font-size: .8rem; color: #047857; line-height: 1.5; }
 
 /* ── Features ─────────────────────────────────────── */
 .features {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-  margin-bottom: 52px;
+  gap: 10px;
+  margin-bottom: 32px;
 }
-@media (max-width: 480px) { .features { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+  .features { grid-template-columns: 1fr; }
+}
 .feature {
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  padding: 24px;
+  padding: 18px;
   box-shadow: var(--shadow-s);
-  transition: box-shadow .22s, transform .2s, border-color .2s;
+  transition: box-shadow .2s, transform .2s;
 }
 .feature:hover {
   box-shadow: var(--shadow-m);
-  transform: translateY(-3px);
-  border-color: var(--border-h);
+  transform: translateY(-2px);
 }
 .feature-icon {
-  width: 40px; height: 40px;
+  width: 34px; height: 34px;
   background: var(--accent-lt);
-  border: 1px solid rgba(14,165,111,.15);
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.05rem;
-  margin-bottom: 14px;
+  font-size: .95rem;
+  margin-bottom: 10px;
 }
 .feature-title {
-  font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 700;
-  font-size: .88rem;
+  font-size: .84rem;
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .feature-desc {
-  font-size: .79rem;
+  font-size: .78rem;
   color: var(--muted);
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 /* ── Hoe het werkt ────────────────────────────────── */
-.how-section { margin-bottom: 52px; }
+.how-section {
+  margin-bottom: 32px;
+}
 .how-title {
-  font-family: 'Bricolage Grotesque', sans-serif;
-  font-weight: 800;
-  font-size: 1.35rem;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 1.2rem;
   color: var(--navy);
   text-align: center;
-  margin-bottom: 26px;
-  letter-spacing: -0.3px;
+  margin-bottom: 18px;
 }
 .steps {
   display: flex;
@@ -611,78 +622,72 @@ footer, #MainMenu,
 .step {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px 24px;
-  box-shadow: var(--shadow-s);
-  transition: border-color .2s, box-shadow .2s;
-}
-.step:hover {
-  border-color: var(--border-h);
-  box-shadow: var(--shadow-m);
+  padding: 16px 18px;
 }
 .step-num {
-  width: 32px; height: 32px;
-  min-width: 32px;
+  width: 28px; height: 28px;
+  min-width: 28px;
   background: var(--navy);
   color: #fff;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Bricolage Grotesque', sans-serif;
-  font-size: .78rem;
-  font-weight: 800;
+  font-size: .74rem;
+  font-weight: 700;
 }
 .step-text { flex: 1; }
 .step-title {
-  font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 700;
-  font-size: .88rem;
+  font-size: .84rem;
   color: var(--text);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
-.step-desc { font-size: .79rem; color: var(--muted); line-height: 1.55; }
+.step-desc {
+  font-size: .78rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
 
 /* ── Social proof ─────────────────────────────────── */
 .social-proof {
   text-align: center;
-  padding: 36px 0;
-  margin-bottom: 52px;
+  padding: 24px 0;
+  margin-bottom: 32px;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
 .social-proof-stats {
   display: flex;
   justify-content: center;
-  gap: 50px;
+  gap: 28px;
   flex-wrap: wrap;
 }
 .sp-stat { text-align: center; }
 .sp-number {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: 'Playfair Display', serif;
   font-weight: 800;
-  font-size: 2rem;
+  font-size: 1.45rem;
   color: var(--navy);
   line-height: 1;
 }
 .sp-label {
-  font-size: .67rem;
+  font-size: .68rem;
   color: var(--muted);
-  font-weight: 600;
-  margin-top: 5px;
-  text-transform: uppercase;
-  letter-spacing: .7px;
+  font-weight: 500;
+  margin-top: 3px;
 }
 
 /* ── Footer ───────────────────────────────────────── */
 .footer {
   text-align: center;
-  padding: 32px 0 12px;
+  padding: 24px 0 8px;
   border-top: 1px solid var(--border);
-  font-size: .71rem;
+  font-size: .7rem;
   color: var(--muted);
-  line-height: 1.9;
+  line-height: 1.7;
 }
 
 /* ═════════════════════════════════════════════════════
@@ -692,30 +697,28 @@ footer, #MainMenu,
 /* Text input */
 div[data-testid="stTextInput"] > div > div {
   border: 1.5px solid var(--border-h) !important;
-  border-radius: 12px !important;
-  background: var(--surface) !important;
-  box-shadow: var(--shadow-m) !important;
-  transition: border-color .22s, box-shadow .22s !important;
-  margin-bottom: 18px !important;
+  border-radius: 10px !important;
+  background: var(--bg) !important;
+  box-shadow: none !important;
+  transition: border-color .2s, box-shadow .2s !important;
 }
 div[data-testid="stTextInput"] > div > div:focus-within {
   border-color: var(--navy-lt) !important;
-  box-shadow: 0 0 0 3px rgba(30,77,140,.10), var(--shadow-m) !important;
+  box-shadow: 0 0 0 3px rgba(30,77,140,.10) !important;
 }
 div[data-testid="stTextInput"] input {
-  font-family: 'Figtree', sans-serif !important;
-  font-size: 1.08rem !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: .9rem !important;
   color: var(--text) !important;
-  padding: 16px 18px !important;
+  padding: 10px 14px !important;
   background: transparent !important;
-  text-align: center !important;
 }
 div[data-testid="stTextInput"] input::placeholder {
   color: var(--muted) !important;
-  font-size: 1rem !important;
+  font-size: .86rem !important;
 }
 
-/* Buttons centered */
+/* ── KNOPPEN — beperkte breedte, gecentreerd ──────── */
 div[data-testid="stButton"],
 div[data-testid="stDownloadButton"],
 div[data-testid="stLinkButton"] {
@@ -723,44 +726,41 @@ div[data-testid="stLinkButton"] {
   justify-content: center !important;
 }
 
-/* Primary button — navy */
 div[data-testid="stButton"] > button {
-  max-width: 380px !important;
+  max-width: 100% !important;
   width: 100% !important;
-  margin: 16px auto 44px auto !important;
   background: var(--navy) !important;
   color: #fff !important;
   border: none !important;
-  border-radius: 12px !important;
-  font-family: 'Bricolage Grotesque', sans-serif !important;
+  border-radius: 10px !important;
+  font-family: 'DM Sans', sans-serif !important;
   font-weight: 700 !important;
-  font-size: .92rem !important;
-  padding: 14px 28px !important;
+  font-size: .88rem !important;
+  padding: 11px 20px !important;
   letter-spacing: .2px !important;
-  box-shadow: 0 4px 22px rgba(11,29,58,.22) !important;
-  transition: all .2s !important;
+  box-shadow: 0 2px 8px rgba(11,29,58,.18) !important;
+  transition: all .15s !important;
   cursor: pointer !important;
 }
 div[data-testid="stButton"] > button:hover {
   background: var(--navy-mid) !important;
-  box-shadow: 0 6px 30px rgba(11,29,58,.3) !important;
-  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 14px rgba(11,29,58,.24) !important;
+  transform: translateY(-1px) !important;
 }
 
-/* Download button */
 div[data-testid="stDownloadButton"] > button {
-  max-width: 380px !important;
+  max-width: 100% !important;
   width: 100% !important;
   background: var(--navy) !important;
   color: #fff !important;
   border: none !important;
-  border-radius: 12px !important;
-  font-family: 'Bricolage Grotesque', sans-serif !important;
+  border-radius: 10px !important;
+  font-family: 'DM Sans', sans-serif !important;
   font-weight: 700 !important;
-  font-size: .9rem !important;
-  padding: 13px 28px !important;
-  box-shadow: 0 4px 18px rgba(11,29,58,.2) !important;
-  transition: all .2s !important;
+  font-size: .88rem !important;
+  padding: 11px 20px !important;
+  box-shadow: 0 2px 8px rgba(11,29,58,.18) !important;
+  transition: all .15s !important;
   cursor: pointer !important;
 }
 div[data-testid="stDownloadButton"] > button:hover {
@@ -768,53 +768,50 @@ div[data-testid="stDownloadButton"] > button:hover {
   transform: translateY(-1px) !important;
 }
 
-/* Link button — accent green */
 div[data-testid="stLinkButton"] > a {
   display: block !important;
-  max-width: 380px !important;
+  max-width: 100% !important;
   width: 100% !important;
   background: var(--accent) !important;
   color: #fff !important;
   border: none !important;
-  border-radius: 12px !important;
-  font-family: 'Bricolage Grotesque', sans-serif !important;
-  font-weight: 800 !important;
-  font-size: .94rem !important;
-  padding: 15px 28px !important;
+  border-radius: 10px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: .9rem !important;
+  padding: 11px 20px !important;
   text-align: center !important;
   text-decoration: none !important;
-  box-shadow: 0 4px 22px rgba(14,165,111,.26) !important;
-  transition: all .2s !important;
+  box-shadow: 0 2px 8px rgba(14,165,111,.22) !important;
+  transition: all .15s !important;
   cursor: pointer !important;
 }
 div[data-testid="stLinkButton"] > a:hover {
   background: var(--accent-dk) !important;
-  box-shadow: 0 6px 30px rgba(14,165,111,.36) !important;
-  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 14px rgba(14,165,111,.30) !important;
+  transform: translateY(-1px) !important;
 }
 
 /* Alerts */
 [data-testid="stAlert"] {
-  background: var(--surface) !important;
   border-radius: 10px !important;
-  font-family: 'Figtree', sans-serif !important;
-  font-size: .86rem !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: .84rem !important;
 }
 
 /* Map */
 [data-testid="stDeckGlJsonChart"],
 [data-testid="stDeckGlJsonChart"] > div {
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   overflow: hidden !important;
-  max-height: 220px !important;
-  border: 1.5px solid var(--border) !important;
+  max-height: 200px !important;
 }
 
 /* Spinner */
 [data-testid="stSpinner"] p {
-  font-family: 'Figtree', sans-serif !important;
+  font-family: 'DM Sans', sans-serif !important;
   color: var(--navy) !important;
-  font-size: .86rem !important;
+  font-size: .84rem !important;
 }
 
 /* Caption */
@@ -825,21 +822,19 @@ div[data-testid="stLinkButton"] > a:hover {
 }
 
 /* ── Responsive ───────────────────────────────────── */
-@media (max-width: 600px) {
+@media (max-width: 560px) {
   .block-container,
   [data-testid="stMainBlockContainer"] {
-    padding-left: 16px !important;
-    padding-right: 16px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
   }
-  .navbar  { padding: 16px 0 18px; margin-bottom: 30px; }
-  .hero    { padding: 8px 0 30px; }
-  .paywall { padding: 26px 20px; }
-  .trust   { gap: 6px 14px; }
-  .trust-item { font-size: .67rem; }
+  .search-wrap { padding: 14px 16px 12px; }
+  .navbar { padding: 12px 0 14px; margin-bottom: 20px; }
+  .hero { padding: 2px 0 20px; }
+  .paywall { padding: 20px 16px; }
+  .trust { gap: 3px 10px; }
+  .trust-item { font-size: .66rem; }
   .nav-secure { display: none; }
-  .sp-number  { font-size: 1.6rem; }
-  .metrics    { grid-template-columns: 1fr; }
-  .social-proof-stats { gap: 30px; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -916,6 +911,7 @@ if betaald:
             data=pdf_bytes,
             file_name=f"WoningCheckAI_{safe_name}.pdf",
             mime="application/pdf",
+            use_container_width=True,
         )
     else:
         st.warning("Rapport kon niet worden opgehaald. Voer uw adres hieronder opnieuw in.")
@@ -929,7 +925,6 @@ if betaald:
 if not betaald:
     st.markdown("""
     <div class="hero">
-      <div class="hero-bg"></div>
       <div class="hero-eyebrow">
         <span class="hero-eyebrow-dot"></span>
         Kadaster BAG-data · Claude AI analyse
@@ -945,18 +940,15 @@ if not betaald:
     </div>
     """, unsafe_allow_html=True)
 
-st.markdown(
-    '<div style="text-align:center; margin-bottom:12px; font-size:0.63rem; '
-    'color:#6B7896; font-weight:700; text-transform:uppercase; letter-spacing:1px;">'
-    '🔍 Voer een Nederlands adres in</div>',
-    unsafe_allow_html=True,
-)
+st.markdown('<div class="search-wrap">', unsafe_allow_html=True)
+st.markdown('<div class="search-label">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
 adres_input = st.text_input(
     label="adres",
     label_visibility="collapsed",
     placeholder="Bijv. Keizersgracht 123, Amsterdam",
 )
-scan_clicked = st.button("Analyseer dit adres →")
+scan_clicked = st.button("Analyseer dit adres →", use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("""
 <div class="trust">
@@ -987,10 +979,12 @@ if scan_clicked:
         woningtype  = data.get("woningtype", "Woning")
         label       = schat_energielabel(bouwjaar)
 
+        # Woningkaart
         st.markdown(f"""
         <div class="result-card">
           <div class="result-card-header">
-            <span class="result-card-header-title">📍 {adres_input}</span>
+            <span>📍</span>
+            <span class="result-card-header-title">{adres_input}</span>
           </div>
           <div class="result-card-body">
             <div class="metrics">
@@ -1014,6 +1008,7 @@ if scan_clicked:
         """, unsafe_allow_html=True)
         st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
 
+        # Rapport genereren
         bestaand = zoek_bestaand_rapport(adres_input)
         if bestaand:
             rapport = bestaand
@@ -1021,14 +1016,17 @@ if scan_clicked:
             with st.spinner("AI schrijft uw persoonlijk verduurzamingsplan..."):
                 rapport = cached_advies(bouwjaar, oppervlakte, woningtype)
 
+        # Sessie opslaan
         st.session_state.huidig_adres       = adres_input
         st.session_state.huidig_rapport     = rapport
         st.session_state.huidig_bouwjaar    = bouwjaar
         st.session_state.huidig_oppervlakte = oppervlakte
 
+        # Supabase opslaan
         if not bestaand:
             sla_scan_op(adres=adres_input, bag_data=data, rapport=rapport, energielabel=label)
 
+        # Preview tonen
         preview, rest = splits_rapport(rapport)
 
         st.markdown("""
@@ -1041,6 +1039,7 @@ if scan_clicked:
         st.markdown(f'<div class="rapport-body"><div class="preview-wrap">{preview}</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
+        # Betaalmuur
         stripe_url = maak_stripe_url(adres_input)
 
         if stripe_url:
@@ -1065,6 +1064,7 @@ if scan_clicked:
             st.link_button(
                 "Volledig rapport ontgrendelen voor €4,95 →",
                 stripe_url,
+                use_container_width=True,
             )
         else:
             st.markdown(f'<div class="rapport-body">{rest}</div>', unsafe_allow_html=True)
@@ -1075,6 +1075,7 @@ if scan_clicked:
                 data=pdf_bytes,
                 file_name=f"WoningCheckAI_{safe_name}.pdf",
                 mime="application/pdf",
+                use_container_width=True,
             )
 
         st.caption("Dit rapport is indicatief op basis van officiële BAG-data en AI-analyse. Het vervangt geen officieel energielabel.")
