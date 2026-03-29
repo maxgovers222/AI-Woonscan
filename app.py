@@ -8,7 +8,7 @@ from database import sla_scan_op, zoek_bestaand_rapport, haal_recente_scans_op, 
 from fpdf import FPDF
 
 # ─────────────────────────────────────────────────────────────
-#  PAGINA CONFIGURATIE
+#  CONFIG
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="WoningCheckAI – Gratis Energiescan",
@@ -18,9 +18,12 @@ st.set_page_config(
 )
 
 STRIPE_PAYMENT_LINK = os.getenv("STRIPE_PAYMENT_LINK", "")
-APP_URL             = os.getenv("APP_URL", "https://ai-woonscan-qdkwobbescefekt7zxo6j6.streamlit.app")
+APP_URL = os.getenv("APP_URL", "https://ai-woonscan-qdkwobbescefekt7zxo6j6.streamlit.app")
 
 
+# ─────────────────────────────────────────────────────────────
+#  HELPERS
+# ─────────────────────────────────────────────────────────────
 def maak_stripe_url(adres: str = "") -> str:
     if not STRIPE_PAYMENT_LINK:
         return ""
@@ -32,13 +35,13 @@ def maak_stripe_url(adres: str = "") -> str:
 def controleer_betaling() -> tuple[bool, str]:
     params = st.query_params
     betaald = params.get("betaald", "") == "ja"
-    adres   = urllib.parse.unquote(params.get("adres", ""))
+    adres = urllib.parse.unquote(params.get("adres", ""))
     return betaald, adres
 
 
 def splits_rapport(rapport: str) -> tuple[str, str]:
-    lijnen    = rapport.split("\n")
-    kopjes    = 0
+    lijnen = rapport.split("\n")
+    kopjes = 0
     splitpunt = len(lijnen)
     for i, lijn in enumerate(lijnen):
         if lijn.startswith("## ") or lijn.startswith("# "):
@@ -46,16 +49,14 @@ def splits_rapport(rapport: str) -> tuple[str, str]:
             if kopjes == 3:
                 splitpunt = i
                 break
-    preview = "\n".join(lijnen[:splitpunt]).strip()
-    rest    = "\n".join(lijnen[splitpunt:]).strip()
-    return preview, rest
+    return "\n".join(lijnen[:splitpunt]).strip(), "\n".join(lijnen[splitpunt:]).strip()
 
 
 def create_pdf(rapport_tekst: str, adres: str, bouwjaar, oppervlakte) -> bytes:
     pdf = FPDF()
     pdf.add_page()
     pdf.set_margins(20, 20, 20)
-    pdf.set_fill_color(10, 36, 99)
+    pdf.set_fill_color(11, 29, 58)
     pdf.rect(0, 0, 210, 42, "F")
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("Arial", "B", 20)
@@ -67,10 +68,10 @@ def create_pdf(rapport_tekst: str, adres: str, bouwjaar, oppervlakte) -> bytes:
     pdf.set_text_color(180, 210, 255)
     pdf.cell(210, 6, f"Gegenereerd op {datetime.date.today().strftime('%d %B %Y')}", align="C", ln=True)
     pdf.ln(12)
-    pdf.set_text_color(10, 36, 99)
+    pdf.set_text_color(11, 29, 58)
     pdf.set_font("Arial", "B", 13)
     pdf.cell(0, 8, f"Adres: {adres}", ln=True)
-    pdf.set_draw_color(10, 36, 99)
+    pdf.set_draw_color(11, 29, 58)
     pdf.set_line_width(0.4)
     pdf.line(20, pdf.get_y(), 190, pdf.get_y())
     pdf.ln(3)
@@ -81,10 +82,10 @@ def create_pdf(rapport_tekst: str, adres: str, bouwjaar, oppervlakte) -> bytes:
     pdf.ln(5)
     pdf.set_text_color(25, 25, 25)
     pdf.set_font("Arial", "", 11)
-    safe_text = rapport_tekst.encode("latin-1", "replace").decode("latin-1")
-    for sym in ["##", "**", "__", "---", "```", "# "]:
-        safe_text = safe_text.replace(sym, "")
-    pdf.multi_cell(0, 7, safe_text)
+    safe = rapport_tekst.encode("latin-1", "replace").decode("latin-1")
+    for s in ["##", "**", "__", "---", "```", "# "]:
+        safe = safe.replace(s, "")
+    pdf.multi_cell(0, 7, safe)
     pdf.set_y(-18)
     pdf.set_draw_color(200, 200, 200)
     pdf.line(20, pdf.get_y(), 190, pdf.get_y())
@@ -116,207 +117,162 @@ def schat_energielabel(bouwjaar) -> str:
     return "F"
 
 
-if "huidig_adres" not in st.session_state:
-    st.session_state.huidig_adres = ""
-if "huidig_rapport" not in st.session_state:
-    st.session_state.huidig_rapport = ""
-if "huidig_bouwjaar" not in st.session_state:
-    st.session_state.huidig_bouwjaar = ""
-if "huidig_oppervlakte" not in st.session_state:
-    st.session_state.huidig_oppervlakte = ""
+for k, v in [("huidig_adres", ""), ("huidig_rapport", ""), ("huidig_bouwjaar", ""), ("huidig_oppervlakte", "")]:
+    if k not in st.session_state:
+        st.session_state[k] = v
 
 
 # ─────────────────────────────────────────────────────────────
-#  CSS — Professionele, strakke layout
+#  CSS
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');
 
+/* ── Tokens ───────────────────────────────────────── */
 :root {
-  --navy:      #0B1D3A;
-  --navy-mid:  #132E5B;
-  --navy-lt:   #1E4D8C;
-  --accent:    #0EA56F;
-  --accent-dk: #0A8A5C;
-  --accent-lt: #E7F9F1;
-  --warm:      #F5A623;
-  --warm-lt:   #FFF8EC;
-  --bg:        #F6F8FB;
-  --surface:   #FFFFFF;
-  --text:      #1A1F2E;
-  --text-2:    #3D4663;
-  --muted:     #6B7896;
-  --border:    #E4E9F2;
-  --border-h:  #CDD5E3;
-  --radius:    12px;
-  --radius-lg: 20px;
-  --shadow-s:  0 1px 2px rgba(11,29,58,.04), 0 2px 8px rgba(11,29,58,.06);
-  --shadow-m:  0 2px 4px rgba(11,29,58,.04), 0 8px 24px rgba(11,29,58,.08);
-  --shadow-l:  0 4px 8px rgba(11,29,58,.04), 0 16px 40px rgba(11,29,58,.10);
+  --ink:       #0B1D3A;
+  --ink-2:     #2C3E5D;
+  --muted:     #7A8BA8;
+  --green:     #0C9B6A;
+  --green-dk:  #097A53;
+  --green-lt:  #E6F7F1;
+  --amber:     #D97706;
+  --amber-lt:  #FEF3C7;
+  --bg:        #F7F9FC;
+  --white:     #FFFFFF;
+  --border:    #DDE4EF;
+  --border-2:  #C8D3E6;
+  --sh-1:      0 1px 4px rgba(11,29,58,.06), 0 6px 20px rgba(11,29,58,.07);
+  --sh-2:      0 2px 8px rgba(11,29,58,.05), 0 16px 40px rgba(11,29,58,.10);
+  --r:         12px;
+  --r-lg:      20px;
 }
 
-/* ── Reset & base ─────────────────────────────────── */
+/* ── Base ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body,
-[data-testid="stAppViewContainer"],
-.stApp {
+html, body, .stApp,
+[data-testid="stAppViewContainer"] {
   background: var(--bg) !important;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
-  color: var(--text) !important;
+  font-family: 'Outfit', sans-serif !important;
+  color: var(--ink) !important;
 }
 
-/* Verberg Streamlit chrome */
 [data-testid="stHeader"],
 [data-testid="stToolbar"],
 [data-testid="stDecoration"],
-footer, #MainMenu,
-.stDeployButton { display: none !important; }
+.stDeployButton, footer, #MainMenu { display: none !important; }
 
-/* ── KERNFIX: beperk breedte ──────────────────────── */
-[data-testid="stMain"] {
-  background: var(--bg) !important;
-}
-
-.block-container,
-[data-testid="stMainBlockContainer"] {
-  max-width: 860px !important;
+/* Max-width container */
+[data-testid="stMainBlockContainer"],
+.block-container {
+  max-width: 820px !important;
   margin: 0 auto !important;
-  padding: 0 20px 60px !important;
+  padding: 0 32px 80px !important;
 }
 
-/* Verwijder lege ruimtes */
-[data-testid="stVerticalBlock"] {
-  gap: 0.7rem !important;
-}
-[data-testid="stElementContainer"]:has(> div:empty),
-[data-testid="stVerticalBlock"] > div:empty,
-.element-container:empty {
-  display: none !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  min-height: 0 !important;
-}
+/* Tighten vertical spacing between Streamlit blocks */
+[data-testid="stVerticalBlock"] { gap: 0 !important; }
+section[data-testid="stSidebar"] { display: none !important; }
 
-/* ── Navigatiebalk ────────────────────────────────── */
-.navbar {
+/* ── Navbar ───────────────────────────────────────── */
+.nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 0 20px;
+  padding: 28px 0 24px;
+  margin-bottom: 0;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 32px;
 }
 .nav-logo {
   font-family: 'Playfair Display', serif;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 1.25rem;
-  color: var(--navy);
+  color: var(--ink);
   letter-spacing: -0.3px;
-  line-height: 1;
 }
-.nav-logo em {
-  font-style: italic;
-  color: var(--accent);
-}
-.nav-pills {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.nav-badge {
-  background: var(--accent-lt);
-  color: var(--accent);
-  font-size: .62rem;
-  font-weight: 700;
-  letter-spacing: .5px;
+.nav-logo span { color: var(--green); }
+.nav-tag {
+  font-family: 'Outfit', sans-serif;
+  font-size: .65rem;
+  font-weight: 600;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 4px 10px;
+  color: var(--green);
+  background: var(--green-lt);
+  border: 1px solid rgba(12,155,106,.18);
+  padding: 5px 13px;
   border-radius: 999px;
-  border: 1px solid rgba(14,165,111,.15);
-}
-.nav-secure {
-  background: var(--warm-lt);
-  color: var(--warm);
-  font-size: .62rem;
-  font-weight: 700;
-  letter-spacing: .5px;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(245,166,35,.15);
 }
 
 /* ── Hero ─────────────────────────────────────────── */
 .hero {
   text-align: center;
-  padding: 4px 0 32px;
+  padding: 64px 0 52px;
 }
-.hero-eyebrow {
+.hero-pill {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   font-size: .68rem;
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: .7px;
+  font-weight: 600;
+  letter-spacing: .9px;
   text-transform: uppercase;
-  margin-bottom: 14px;
-  background: var(--accent-lt);
-  padding: 5px 14px;
+  color: var(--green);
+  background: var(--green-lt);
+  border: 1px solid rgba(12,155,106,.2);
+  padding: 6px 16px 6px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(14,165,111,.12);
+  margin-bottom: 28px;
 }
-.hero-eyebrow-dot {
-  width: 5px; height: 5px;
-  background: var(--accent);
+.pill-dot {
+  width: 7px; height: 7px;
   border-radius: 50%;
-  animation: pulse 2.5s ease-in-out infinite;
+  background: var(--green);
+  animation: blink 2.5s ease-in-out infinite;
 }
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: .4; transform: scale(1.4); }
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
 }
-.hero-title {
+.hero-h1 {
   font-family: 'Playfair Display', serif;
-  font-weight: 800;
-  font-size: clamp(1.7rem, 4.5vw, 2.4rem);
-  color: var(--navy);
-  line-height: 1.15;
-  letter-spacing: -0.5px;
-  margin-bottom: 14px;
+  font-weight: 900;
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  color: var(--ink);
+  line-height: 1.1;
+  letter-spacing: -1px;
+  margin-bottom: 0;
 }
-.hero-title em {
+.hero-h1 em {
   font-style: italic;
-  color: var(--accent);
+  color: var(--green);
 }
 .hero-sub {
-  font-size: .95rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.08rem;
   color: var(--muted);
   font-weight: 400;
-  line-height: 1.6;
-  max-width: 460px;
-  margin: 0 auto;
+  line-height: 1.7;
+  margin: 20px auto 0;
+  max-width: 500px;
+  text-align: center;
 }
 
-/* ── Zoekbox ──────────────────────────────────────── */
-.search-wrap {
-  background: var(--surface);
-  border: 1.5px solid var(--border-h);
-  border-radius: var(--radius-lg);
-  padding: 18px 22px 14px;
-  box-shadow: var(--shadow-m);
-  margin-bottom: 14px;
+/* ── Search box ───────────────────────────────────── */
+.search-area {
+  margin: 40px auto 0;
+  max-width: 560px;
+  text-align: center;
 }
-.search-label {
-  font-size: .7rem;
-  font-weight: 700;
-  color: var(--muted);
-  letter-spacing: .7px;
+.search-hint {
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .8px;
   text-transform: uppercase;
-  margin-bottom: 6px;
+  color: var(--muted);
+  margin-bottom: 10px;
 }
 
 /* ── Trust strip ──────────────────────────────────── */
@@ -325,493 +281,479 @@ footer, #MainMenu,
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 4px 14px;
-  margin-bottom: 36px;
-  padding: 0 4px;
+  gap: 8px 28px;
+  margin: 18px 0 64px;
 }
 .trust-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: .72rem;
+  gap: 5px;
+  font-size: .75rem;
   color: var(--muted);
   font-weight: 500;
-  white-space: nowrap;
 }
-.trust-check {
-  color: var(--accent);
-  font-size: .8rem;
-  font-weight: 700;
+.tck { color: var(--green); font-weight: 700; }
+
+/* ── Section divider ──────────────────────────────── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0 0 48px;
 }
 
-/* ── Resultaat card ───────────────────────────────── */
-.result-card {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
+/* ── Woningkaart ──────────────────────────────────── */
+.wcard {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-s);
-  margin-bottom: 14px;
+  box-shadow: var(--sh-1);
+  margin-bottom: 16px;
 }
-.result-card-header {
-  background: var(--navy);
-  padding: 13px 18px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.wcard-top {
+  background: var(--ink);
+  padding: 14px 22px;
 }
-.result-card-header-title {
+.wcard-top-label {
+  font-size: .72rem;
   font-weight: 600;
-  font-size: .86rem;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+  margin-bottom: 2px;
+}
+.wcard-top-adres {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: .97rem;
   color: #fff;
 }
-.result-card-body { padding: 18px; }
-
-/* ── Metric pills ─────────────────────────────────── */
-.metrics {
+.wcard-metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-@media (max-width: 480px) {
-  .metrics { grid-template-columns: 1fr; }
+  padding: 22px 22px 18px;
+  gap: 12px;
 }
 .metric {
-  background: var(--bg);
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  padding: 12px;
   text-align: center;
+  padding: 16px 8px;
+  background: var(--bg);
+  border-radius: 10px;
+  border: 1px solid var(--border);
 }
-.metric-label {
-  font-size: .62rem;
+.metric-lbl {
+  font-size: .6rem;
   font-weight: 700;
-  letter-spacing: .8px;
+  letter-spacing: .9px;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 3px;
+  margin-bottom: 8px;
 }
-.metric-value {
+.metric-val {
   font-family: 'Playfair Display', serif;
   font-weight: 700;
-  font-size: 1.4rem;
-  color: var(--navy);
-  line-height: 1.1;
+  font-size: 2rem;
+  color: var(--ink);
+  line-height: 1;
 }
 .metric-unit {
-  font-size: .68rem;
+  font-size: .65rem;
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
-/* ── Rapport ──────────────────────────────────────── */
-.rapport-card {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
+/* ── Rapport card ─────────────────────────────────── */
+.rcard {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-s);
-  margin-bottom: 14px;
+  box-shadow: var(--sh-1);
+  margin-bottom: 16px;
 }
-.rapport-header {
-  padding: 14px 18px;
-  border-bottom: 1.5px solid var(--border);
+.rcard-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
 }
-.rapport-header-title {
+.rcard-title {
+  font-family: 'Outfit', sans-serif;
   font-weight: 700;
   font-size: .9rem;
-  color: var(--text);
+  color: var(--ink);
 }
-.rapport-badge {
-  background: var(--accent-lt);
-  color: var(--accent);
-  font-size: .62rem;
+.rcard-badge {
+  font-size: .6rem;
   font-weight: 700;
-  padding: 3px 9px;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  color: var(--green);
+  background: var(--green-lt);
+  border: 1px solid rgba(12,155,106,.2);
+  padding: 3px 11px;
   border-radius: 999px;
-  letter-spacing: .3px;
 }
-.rapport-body {
-  padding: 20px 22px 18px;
-  font-size: .9rem;
-  line-height: 1.72;
-  color: var(--text-2);
+.rcard-badge.full { color: var(--amber); background: var(--amber-lt); border-color: rgba(217,119,6,.2); }
+.rcard-body {
+  padding: 28px 28px 24px;
+  font-size: .93rem;
+  line-height: 1.82;
+  color: var(--ink-2);
 }
-.rapport-body h1, .rapport-body h2 {
+.rcard-body h1, .rcard-body h2 {
   font-family: 'Playfair Display', serif;
   font-weight: 700;
-  color: var(--navy);
-  font-size: 1.1rem;
-  margin: 1.3em 0 .45em;
-  padding-bottom: 5px;
-  border-bottom: 2px solid var(--border);
-}
-.rapport-body h3 {
-  font-weight: 700;
-  color: var(--text);
-  font-size: .92rem;
-  margin: 1.1em 0 .3em;
-}
-.rapport-body strong { color: var(--text); font-weight: 700; }
-.rapport-body ul { padding-left: 18px; margin: .4em 0; }
-.rapport-body li { margin-bottom: 3px; }
-.rapport-body table {
-  width: 100%; border-collapse: collapse;
-  font-size: .8rem; margin: 1em 0;
-  border-radius: 8px; overflow: hidden;
-}
-.rapport-body th {
-  background: var(--navy); color: #fff;
-  padding: 8px 10px; text-align: left;
-  font-weight: 600; font-size: .74rem;
-  letter-spacing: .2px;
-}
-.rapport-body td {
-  padding: 7px 10px;
+  color: var(--ink);
+  font-size: 1.15rem;
+  margin: 1.8em 0 .5em;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
-  color: var(--text-2);
 }
-.rapport-body tr:nth-child(even) td { background: var(--bg); }
+.rcard-body h3 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  color: var(--ink);
+  font-size: .97rem;
+  margin: 1.4em 0 .4em;
+}
+.rcard-body strong { color: var(--ink); font-weight: 700; }
+.rcard-body a { color: var(--green); text-decoration: underline; }
+.rcard-body ul { padding-left: 20px; margin: .5em 0; }
+.rcard-body li { margin-bottom: 5px; }
+.rcard-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .84rem;
+  margin: 1.2em 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.rcard-body th {
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: .75rem;
+  letter-spacing: .3px;
+}
+.rcard-body td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-2);
+}
+.rcard-body tr:nth-child(even) td { background: var(--bg); }
 
 /* Preview fade */
-.preview-wrap {
+.pfade {
   position: relative;
   overflow: hidden;
   max-height: 300px;
 }
-.preview-wrap::after {
+.pfade::after {
   content: '';
-  position: absolute; bottom: 0; left: 0; right: 0; height: 120px;
-  background: linear-gradient(transparent, var(--surface));
+  position: absolute; bottom: 0; left: 0; right: 0; height: 130px;
+  background: linear-gradient(transparent, var(--white));
   pointer-events: none;
 }
 
 /* ── Betaalmuur ───────────────────────────────────── */
 .paywall {
-  background: linear-gradient(145deg, #F0F6FF 0%, #E0ECFA 100%);
-  border: 1.5px solid #B8D0F0;
-  border-radius: var(--radius);
-  padding: 26px 22px;
+  background: linear-gradient(160deg, #EEF4FF 0%, #E0ECFF 100%);
+  border: 1.5px solid #BDD0F5;
+  border-radius: var(--r-lg);
+  padding: 40px 32px 36px;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
-.paywall-icon { font-size: 1.5rem; margin-bottom: 8px; }
 .paywall-title {
   font-family: 'Playfair Display', serif;
   font-weight: 700;
-  font-size: 1.2rem;
-  color: var(--navy);
-  margin-bottom: 8px;
+  font-size: 1.55rem;
+  color: var(--ink);
+  margin-bottom: 12px;
+  letter-spacing: -0.4px;
 }
 .paywall-sub {
-  font-size: .84rem;
-  color: var(--text-2);
-  line-height: 1.55;
-  margin-bottom: 14px;
-  max-width: 400px;
-  margin-left: auto;
-  margin-right: auto;
+  font-size: .9rem;
+  color: var(--ink-2);
+  line-height: 1.65;
+  max-width: 420px;
+  margin: 0 auto 22px;
 }
 .paywall-price {
   font-family: 'Playfair Display', serif;
-  font-weight: 800;
-  font-size: 1.9rem;
-  color: var(--navy);
-  margin-bottom: 12px;
+  font-weight: 900;
+  font-size: 3rem;
+  color: var(--ink);
   line-height: 1;
+  margin-bottom: 6px;
 }
-.paywall-price small {
-  font-family: 'DM Sans', sans-serif;
+.paywall-per {
+  font-family: 'Outfit', sans-serif;
   font-size: .78rem;
-  font-weight: 400;
   color: var(--muted);
+  margin-bottom: 22px;
 }
-.paywall-list {
+.paywall-features {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 5px 14px;
-  margin-bottom: 18px;
-  font-size: .76rem;
-  color: var(--text-2);
+  gap: 6px 22px;
+  margin-bottom: 28px;
+  font-size: .8rem;
+  color: var(--ink-2);
 }
-.paywall-list span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.paywall-list .chk { color: var(--accent); font-weight: 700; }
+.paywall-features span { display: flex; align-items: center; gap: 5px; }
+.chk { color: var(--green); font-weight: 700; }
 
-/* ── Succes banner ────────────────────────────────── */
+/* ── Succes ───────────────────────────────────────── */
 .succes {
-  background: linear-gradient(145deg, #ECFDF5 0%, #D1FAE5 100%);
-  border: 1.5px solid #86EFAC;
-  border-radius: var(--radius);
-  padding: 18px 20px;
+  background: linear-gradient(135deg, #ECFDF5, #D1FAE5);
+  border: 1.5px solid #6EE7B7;
+  border-radius: var(--r-lg);
+  padding: 22px 26px;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: 14px;
+  margin-bottom: 24px;
 }
-.succes-icon { font-size: 1.4rem; flex-shrink: 0; }
-.succes-title { font-weight: 700; color: #065F46; font-size: .88rem; margin-bottom: 2px; }
-.succes-sub { font-size: .8rem; color: #047857; line-height: 1.5; }
+.succes-ico { font-size: 1.5rem; flex-shrink: 0; }
+.succes-t { font-weight: 700; color: #065F46; font-size: .92rem; margin-bottom: 3px; }
+.succes-s { font-size: .83rem; color: #047857; }
 
-/* ── Features ─────────────────────────────────────── */
-.features {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 32px;
-}
-@media (max-width: 480px) {
-  .features { grid-template-columns: 1fr; }
-}
-.feature {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px;
-  box-shadow: var(--shadow-s);
-  transition: box-shadow .2s, transform .2s;
-}
-.feature:hover {
-  box-shadow: var(--shadow-m);
-  transform: translateY(-2px);
-}
-.feature-icon {
-  width: 34px; height: 34px;
-  background: var(--accent-lt);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .95rem;
-  margin-bottom: 10px;
-}
-.feature-title {
-  font-weight: 700;
-  font-size: .84rem;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-.feature-desc {
-  font-size: .78rem;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-/* ── Hoe het werkt ────────────────────────────────── */
-.how-section {
-  margin-bottom: 32px;
-}
-.how-title {
+/* ── How it works ─────────────────────────────────── */
+.how { margin-bottom: 56px; }
+.how-h {
   font-family: 'Playfair Display', serif;
   font-weight: 700;
-  font-size: 1.2rem;
-  color: var(--navy);
+  font-size: 1.5rem;
+  color: var(--ink);
   text-align: center;
-  margin-bottom: 18px;
+  margin-bottom: 28px;
+  letter-spacing: -0.4px;
 }
-.steps {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+.steps { display: flex; flex-direction: column; gap: 10px; }
 .step {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px 18px;
+  gap: 18px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px 22px;
+  box-shadow: var(--sh-1);
+  transition: border-color .2s, box-shadow .2s, transform .2s;
 }
-.step-num {
-  width: 28px; height: 28px;
-  min-width: 28px;
-  background: var(--navy);
+.step:hover { border-color: var(--border-2); box-shadow: var(--sh-2); transform: translateX(4px); }
+.step-n {
+  width: 34px; height: 34px; min-width: 34px;
+  background: var(--ink);
   color: #fff;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: .74rem;
-  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  font-size: .78rem; font-weight: 700;
 }
-.step-text { flex: 1; }
-.step-title {
-  font-weight: 700;
-  font-size: .84rem;
-  color: var(--text);
-  margin-bottom: 2px;
-}
-.step-desc {
-  font-size: .78rem;
-  color: var(--muted);
-  line-height: 1.45;
-}
+.step-t { font-weight: 700; font-size: .9rem; color: var(--ink); margin-bottom: 4px; }
+.step-d { font-size: .8rem; color: var(--muted); line-height: 1.55; }
 
-/* ── Social proof ─────────────────────────────────── */
-.social-proof {
-  text-align: center;
-  padding: 24px 0;
-  margin-bottom: 32px;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+/* ── Features ─────────────────────────────────────── */
+.feats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 56px;
 }
-.social-proof-stats {
+.feat {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 24px;
+  box-shadow: var(--sh-1);
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+.feat:hover { border-color: var(--border-2); box-shadow: var(--sh-2); transform: translateY(-3px); }
+.feat-ic {
+  width: 42px; height: 42px;
+  background: var(--green-lt);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  margin-bottom: 14px;
+}
+.feat-t { font-weight: 700; font-size: .9rem; color: var(--ink); margin-bottom: 6px; }
+.feat-d { font-size: .8rem; color: var(--muted); line-height: 1.6; }
+
+/* ── Stats ────────────────────────────────────────── */
+.stats {
   display: flex;
   justify-content: center;
-  gap: 28px;
+  gap: 56px;
+  padding: 40px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 56px;
   flex-wrap: wrap;
 }
-.sp-stat { text-align: center; }
-.sp-number {
+.stat { text-align: center; }
+.stat-n {
   font-family: 'Playfair Display', serif;
-  font-weight: 800;
-  font-size: 1.45rem;
-  color: var(--navy);
+  font-weight: 900;
+  font-size: 2.2rem;
+  color: var(--ink);
   line-height: 1;
 }
-.sp-label {
-  font-size: .68rem;
+.stat-l {
+  font-size: .65rem;
+  font-weight: 600;
+  letter-spacing: .8px;
+  text-transform: uppercase;
   color: var(--muted);
-  font-weight: 500;
-  margin-top: 3px;
+  margin-top: 6px;
 }
 
 /* ── Footer ───────────────────────────────────────── */
 .footer {
   text-align: center;
-  padding: 24px 0 8px;
+  padding: 28px 0 8px;
   border-top: 1px solid var(--border);
-  font-size: .7rem;
+  font-size: .72rem;
   color: var(--muted);
-  line-height: 1.7;
+  line-height: 1.9;
 }
 
-/* ═════════════════════════════════════════════════════
-   STREAMLIT WIDGET OVERRIDES
-   ═════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   STREAMLIT OVERRIDES
+   ═══════════════════════════════════════════════════ */
 
 /* Text input */
 div[data-testid="stTextInput"] > div > div {
-  border: 1.5px solid var(--border-h) !important;
-  border-radius: 10px !important;
-  background: var(--bg) !important;
-  box-shadow: none !important;
+  border: 1.5px solid var(--border-2) !important;
+  border-radius: var(--r) !important;
+  background: var(--white) !important;
+  box-shadow: var(--sh-1) !important;
   transition: border-color .2s, box-shadow .2s !important;
 }
 div[data-testid="stTextInput"] > div > div:focus-within {
-  border-color: var(--navy-lt) !important;
-  box-shadow: 0 0 0 3px rgba(30,77,140,.10) !important;
+  border-color: var(--green) !important;
+  box-shadow: 0 0 0 3px rgba(12,155,106,.12), var(--sh-1) !important;
 }
 div[data-testid="stTextInput"] input {
-  font-family: 'DM Sans', sans-serif !important;
-  font-size: .9rem !important;
-  color: var(--text) !important;
-  padding: 10px 14px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 1rem !important;
+  color: var(--ink) !important;
+  padding: 15px 18px !important;
   background: transparent !important;
+  text-align: center !important;
 }
 div[data-testid="stTextInput"] input::placeholder {
   color: var(--muted) !important;
-  font-size: .86rem !important;
 }
 
-/* ── KNOPPEN — beperkte breedte, gecentreerd ──────── */
+/* Center all buttons */
 div[data-testid="stButton"],
 div[data-testid="stDownloadButton"],
 div[data-testid="stLinkButton"] {
   display: flex !important;
   justify-content: center !important;
+  margin: 0 !important;
 }
 
+/* Primary button — scan */
 div[data-testid="stButton"] > button {
-  max-width: 100% !important;
-  width: 100% !important;
-  background: var(--navy) !important;
+  background: var(--ink) !important;
   color: #fff !important;
   border: none !important;
-  border-radius: 10px !important;
-  font-family: 'DM Sans', sans-serif !important;
-  font-weight: 700 !important;
-  font-size: .88rem !important;
-  padding: 11px 20px !important;
-  letter-spacing: .2px !important;
-  box-shadow: 0 2px 8px rgba(11,29,58,.18) !important;
-  transition: all .15s !important;
+  border-radius: 999px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: .95rem !important;
+  padding: 13px 36px !important;
+  letter-spacing: .1px !important;
+  box-shadow: 0 4px 18px rgba(11,29,58,.22) !important;
+  transition: all .2s !important;
+  width: auto !important;
+  min-width: 220px !important;
   cursor: pointer !important;
+  margin-top: 14px !important;
+  margin-bottom: 0 !important;
 }
 div[data-testid="stButton"] > button:hover {
-  background: var(--navy-mid) !important;
-  box-shadow: 0 4px 14px rgba(11,29,58,.24) !important;
-  transform: translateY(-1px) !important;
+  background: #162c50 !important;
+  box-shadow: 0 6px 26px rgba(11,29,58,.30) !important;
+  transform: translateY(-2px) !important;
 }
 
+/* Download button */
 div[data-testid="stDownloadButton"] > button {
-  max-width: 100% !important;
-  width: 100% !important;
-  background: var(--navy) !important;
+  background: var(--ink) !important;
   color: #fff !important;
   border: none !important;
-  border-radius: 10px !important;
-  font-family: 'DM Sans', sans-serif !important;
-  font-weight: 700 !important;
-  font-size: .88rem !important;
-  padding: 11px 20px !important;
-  box-shadow: 0 2px 8px rgba(11,29,58,.18) !important;
-  transition: all .15s !important;
+  border-radius: 999px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: .92rem !important;
+  padding: 13px 36px !important;
+  box-shadow: 0 4px 18px rgba(11,29,58,.2) !important;
+  transition: all .2s !important;
+  width: auto !important;
+  min-width: 240px !important;
   cursor: pointer !important;
 }
 div[data-testid="stDownloadButton"] > button:hover {
-  background: var(--navy-mid) !important;
-  transform: translateY(-1px) !important;
+  background: #162c50 !important;
+  transform: translateY(-2px) !important;
 }
 
+/* Link button — Stripe */
 div[data-testid="stLinkButton"] > a {
-  display: block !important;
-  max-width: 100% !important;
-  width: 100% !important;
-  background: var(--accent) !important;
+  display: inline-block !important;
+  background: var(--green) !important;
   color: #fff !important;
-  border: none !important;
-  border-radius: 10px !important;
-  font-family: 'DM Sans', sans-serif !important;
+  border-radius: 999px !important;
+  font-family: 'Outfit', sans-serif !important;
   font-weight: 700 !important;
-  font-size: .9rem !important;
-  padding: 11px 20px !important;
+  font-size: .97rem !important;
+  padding: 14px 40px !important;
   text-align: center !important;
   text-decoration: none !important;
-  box-shadow: 0 2px 8px rgba(14,165,111,.22) !important;
-  transition: all .15s !important;
+  box-shadow: 0 4px 20px rgba(12,155,106,.28) !important;
+  transition: all .2s !important;
+  min-width: 280px !important;
   cursor: pointer !important;
+  width: auto !important;
 }
 div[data-testid="stLinkButton"] > a:hover {
-  background: var(--accent-dk) !important;
-  box-shadow: 0 4px 14px rgba(14,165,111,.30) !important;
-  transform: translateY(-1px) !important;
+  background: var(--green-dk) !important;
+  box-shadow: 0 6px 28px rgba(12,155,106,.38) !important;
+  transform: translateY(-2px) !important;
 }
 
 /* Alerts */
 [data-testid="stAlert"] {
-  border-radius: 10px !important;
-  font-family: 'DM Sans', sans-serif !important;
-  font-size: .84rem !important;
+  border-radius: var(--r) !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: .86rem !important;
 }
 
 /* Map */
 [data-testid="stDeckGlJsonChart"],
 [data-testid="stDeckGlJsonChart"] > div {
-  border-radius: 10px !important;
+  border-radius: var(--r) !important;
   overflow: hidden !important;
-  max-height: 200px !important;
+  max-height: 220px !important;
+  border: 1px solid var(--border) !important;
 }
 
 /* Spinner */
 [data-testid="stSpinner"] p {
-  font-family: 'DM Sans', sans-serif !important;
-  color: var(--navy) !important;
-  font-size: .84rem !important;
+  font-family: 'Outfit', sans-serif !important;
+  color: var(--muted) !important;
+  font-size: .86rem !important;
 }
 
 /* Caption */
@@ -819,37 +761,40 @@ div[data-testid="stLinkButton"] > a:hover {
   color: var(--muted) !important;
   font-size: .72rem !important;
   text-align: center !important;
+  padding: 8px 0 0 !important;
 }
 
-/* ── Responsive ───────────────────────────────────── */
-@media (max-width: 560px) {
-  .block-container,
-  [data-testid="stMainBlockContainer"] {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
+/* Remove extra spacing from empty elements */
+[data-testid="stVerticalBlock"] > [data-testid="stVerticalBlockBorderWrapper"]:empty,
+[data-testid="stElementContainer"]:has(> div:empty) {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  [data-testid="stMainBlockContainer"], .block-container {
+    padding: 0 16px 60px !important;
   }
-  .search-wrap { padding: 14px 16px 12px; }
-  .navbar { padding: 12px 0 14px; margin-bottom: 20px; }
-  .hero { padding: 2px 0 20px; }
-  .paywall { padding: 20px 16px; }
-  .trust { gap: 3px 10px; }
-  .trust-item { font-size: .66rem; }
-  .nav-secure { display: none; }
+  .hero { padding: 36px 0 32px; }
+  .hero-h1 { font-size: 2.1rem; }
+  .feats { grid-template-columns: 1fr; }
+  .stats { gap: 30px; }
+  .wcard-metrics { grid-template-columns: 1fr; }
 }
 </style>
 """, unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────
-#  NAVIGATIEBALK
+#  NAVBAR
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
-<div class="navbar">
-  <div class="nav-logo">Woning<em>Check</em>AI</div>
-  <div class="nav-pills">
-    <div class="nav-secure">🔒 SSL</div>
-    <div class="nav-badge">✦ Beta</div>
-  </div>
+<div class="nav">
+  <div class="nav-logo">Woning<span>Check</span>AI</div>
+  <div class="nav-tag">✦ Beta</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -860,24 +805,24 @@ st.markdown("""
 betaald, url_adres = controleer_betaling()
 
 if betaald:
-    adres_betaald     = st.session_state.huidig_adres or url_adres
-    rapport_betaald   = st.session_state.huidig_rapport
-    bouwjaar_betaald  = st.session_state.huidig_bouwjaar
-    oppervlak_betaald = st.session_state.huidig_oppervlakte
+    adres_b  = st.session_state.huidig_adres or url_adres
+    rapport_b = st.session_state.huidig_rapport
+    bouwjaar_b = st.session_state.huidig_bouwjaar
+    oppervlak_b = st.session_state.huidig_oppervlakte
 
-    if not rapport_betaald:
+    if not rapport_b:
         with st.spinner("Rapport ophalen..."):
-            recente_scans = haal_recente_scans_op(limiet=1)
-            if recente_scans:
-                laatste       = recente_scans[0]
-                adres_betaald = laatste.get("adres", adres_betaald)
-                bouwjaar_betaald  = laatste.get("bouwjaar", "Onbekend")
-                oppervlak_betaald = laatste.get("oppervlakte", "Onbekend")
-                rapport_betaald   = zoek_bestaand_rapport(adres_betaald)
-            if not rapport_betaald and adres_betaald:
-                bag_t = cached_bag_data(adres_betaald)
+            scans = haal_recente_scans_op(limiet=1)
+            if scans:
+                laatste = scans[0]
+                adres_b = laatste.get("adres", adres_b)
+                bouwjaar_b = laatste.get("bouwjaar", "Onbekend")
+                oppervlak_b = laatste.get("oppervlakte", "Onbekend")
+                rapport_b = zoek_bestaand_rapport(adres_b)
+            if not rapport_b and adres_b:
+                bag_t = cached_bag_data(adres_b)
                 if bag_t:
-                    rapport_betaald = cached_advies(
+                    rapport_b = cached_advies(
                         bag_t.get("bouwjaar", "Onbekend"),
                         bag_t.get("oppervlakte", "Onbekend"),
                         bag_t.get("woningtype", "Woning"),
@@ -885,51 +830,52 @@ if betaald:
 
     st.markdown("""
     <div class="succes">
-      <div class="succes-icon">✅</div>
+      <div class="succes-ico">✅</div>
       <div>
-        <div class="succes-title">Betaling geslaagd — bedankt!</div>
-        <div class="succes-sub">Uw volledige verduurzamingsrapport en PDF staan hieronder klaar.</div>
+        <div class="succes-t">Betaling geslaagd — bedankt!</div>
+        <div class="succes-s">Uw volledige verduurzamingsrapport staat hieronder klaar om te downloaden.</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-    if rapport_betaald:
+    if rapport_b:
         st.markdown("""
-        <div class="rapport-card">
-          <div class="rapport-header">
-            <span class="rapport-header-title">📄 Uw Volledige Verduurzamingsplan</span>
-            <span class="rapport-badge">Volledig</span>
+        <div class="rcard">
+          <div class="rcard-head">
+            <span class="rcard-title">📄 Uw Volledige Verduurzamingsplan</span>
+            <span class="rcard-badge full">Volledig</span>
           </div>
         """, unsafe_allow_html=True)
-        st.markdown(f'<div class="rapport-body">{rapport_betaald}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="rcard-body">{rapport_b}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        pdf_bytes = create_pdf(rapport_betaald, adres_betaald, bouwjaar_betaald, oppervlak_betaald)
-        safe_name = adres_betaald.replace(" ", "_").replace(",", "").replace("/", "-")
+        pdf_bytes = create_pdf(rapport_b, adres_b, bouwjaar_b, oppervlak_b)
+        safe_name = adres_b.replace(" ", "_").replace(",", "").replace("/", "-")
+        st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
         st.download_button(
             label="⬇️  Download PDF Rapport",
             data=pdf_bytes,
             file_name=f"WoningCheckAI_{safe_name}.pdf",
             mime="application/pdf",
-            use_container_width=True,
         )
     else:
         st.warning("Rapport kon niet worden opgehaald. Voer uw adres hieronder opnieuw in.")
 
     st.query_params.clear()
+    st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────
-#  HERO + ZOEKFORMULIER
+#  HERO
 # ─────────────────────────────────────────────────────────────
 if not betaald:
     st.markdown("""
     <div class="hero">
-      <div class="hero-eyebrow">
-        <span class="hero-eyebrow-dot"></span>
-        Kadaster BAG-data · Claude AI analyse
+      <div class="hero-pill">
+        <span class="pill-dot"></span>
+        Kadaster BAG-data · Claude AI
       </div>
-      <h1 class="hero-title">
+      <h1 class="hero-h1">
         Uw woning verduurzamen?<br>
         <em>Wij regelen het advies.</em>
       </h1>
@@ -940,22 +886,24 @@ if not betaald:
     </div>
     """, unsafe_allow_html=True)
 
-st.markdown('<div class="search-wrap">', unsafe_allow_html=True)
-st.markdown('<div class="search-label">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
+# ─────────────────────────────────────────────────────────────
+#  ZOEKFORMULIER
+# ─────────────────────────────────────────────────────────────
+st.markdown('<div style="text-align:center; font-size:.65rem; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:#7A8BA8; margin-bottom:8px;">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
+
 adres_input = st.text_input(
     label="adres",
     label_visibility="collapsed",
     placeholder="Bijv. Keizersgracht 123, Amsterdam",
 )
-scan_clicked = st.button("Analyseer dit adres →", use_container_width=True)
-st.markdown('</div>', unsafe_allow_html=True)
+scan_clicked = st.button("Analyseer dit adres →")
 
 st.markdown("""
 <div class="trust">
-  <span class="trust-item"><span class="trust-check">✓</span> Preview gratis</span>
-  <span class="trust-item"><span class="trust-check">✓</span> Officiële BAG-data</span>
-  <span class="trust-item"><span class="trust-check">✓</span> Geen account nodig</span>
-  <span class="trust-item"><span class="trust-check">✓</span> Volledig rapport €4,95</span>
+  <span class="trust-item"><span class="tck">✓</span> Preview gratis</span>
+  <span class="trust-item"><span class="tck">✓</span> Officiële BAG-data</span>
+  <span class="trust-item"><span class="tck">✓</span> Geen account nodig</span>
+  <span class="trust-item"><span class="tck">✓</span> Volledig rapport €4,95</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -981,34 +929,34 @@ if scan_clicked:
 
         # Woningkaart
         st.markdown(f"""
-        <div class="result-card">
-          <div class="result-card-header">
-            <span>📍</span>
-            <span class="result-card-header-title">{adres_input}</span>
+        <div class="wcard">
+          <div class="wcard-top">
+            <div class="wcard-top-label">Gevonden pand</div>
+            <div class="wcard-top-adres">📍 {adres_input}</div>
           </div>
-          <div class="result-card-body">
-            <div class="metrics">
-              <div class="metric">
-                <div class="metric-label">Bouwjaar</div>
-                <div class="metric-value">{bouwjaar}</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Oppervlak</div>
-                <div class="metric-value">{oppervlakte}</div>
-                <div class="metric-unit">m²</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Gesch. label</div>
-                <div class="metric-value">{label}</div>
-                <div class="metric-unit">indicatief</div>
-              </div>
+          <div class="wcard-metrics">
+            <div class="metric">
+              <div class="metric-lbl">Bouwjaar</div>
+              <div class="metric-val">{bouwjaar}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-lbl">Oppervlak</div>
+              <div class="metric-val">{oppervlakte}</div>
+              <div class="metric-unit">m²</div>
+            </div>
+            <div class="metric">
+              <div class="metric-lbl">Gesch. label</div>
+              <div class="metric-val">{label}</div>
+              <div class="metric-unit">indicatief</div>
             </div>
           </div>
         </div>
         """, unsafe_allow_html=True)
-        st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
 
-        # Rapport genereren
+        st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+        # Rapport ophalen
         bestaand = zoek_bestaand_rapport(adres_input)
         if bestaand:
             rapport = bestaand
@@ -1016,13 +964,11 @@ if scan_clicked:
             with st.spinner("AI schrijft uw persoonlijk verduurzamingsplan..."):
                 rapport = cached_advies(bouwjaar, oppervlakte, woningtype)
 
-        # Sessie opslaan
         st.session_state.huidig_adres       = adres_input
         st.session_state.huidig_rapport     = rapport
         st.session_state.huidig_bouwjaar    = bouwjaar
         st.session_state.huidig_oppervlakte = oppervlakte
 
-        # Supabase opslaan
         if not bestaand:
             sla_scan_op(adres=adres_input, bag_data=data, rapport=rapport, energielabel=label)
 
@@ -1030,13 +976,13 @@ if scan_clicked:
         preview, rest = splits_rapport(rapport)
 
         st.markdown("""
-        <div class="rapport-card">
-          <div class="rapport-header">
-            <span class="rapport-header-title">🤖 Uw Verduurzamingsplan</span>
-            <span class="rapport-badge">Preview</span>
+        <div class="rcard">
+          <div class="rcard-head">
+            <span class="rcard-title">🤖 Uw Verduurzamingsplan</span>
+            <span class="rcard-badge">Preview</span>
           </div>
         """, unsafe_allow_html=True)
-        st.markdown(f'<div class="rapport-body"><div class="preview-wrap">{preview}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="rcard-body"><div class="pfade">{preview}</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # Betaalmuur
@@ -1045,116 +991,110 @@ if scan_clicked:
         if stripe_url:
             st.markdown(f"""
             <div class="paywall">
-              <div class="paywall-icon">🔒</div>
               <div class="paywall-title">Ontgrendel uw volledige rapport</div>
               <div class="paywall-sub">
-                Alle aanbevelingen, besparingen, kostenoverzicht,
-                subsidie-instructies en PDF download.
+                Alle aanbevelingen, het complete kostenoverzicht,
+                stap-voor-stap subsidie-aanvraaginstructies en uw persoonlijke PDF.
               </div>
-              <div class="paywall-price">€4,95 <small>· eenmalig</small></div>
-              <div class="paywall-list">
-                <span><span class="chk">✓</span> Alle maatregelen</span>
-                <span><span class="chk">✓</span> Subsidiegids</span>
-                <span><span class="chk">✓</span> Kostentabel</span>
+              <div class="paywall-price">€4,95</div>
+              <div class="paywall-per">eenmalig · direct beschikbaar</div>
+              <div class="paywall-features">
+                <span><span class="chk">✓</span> Alle maatregelen + besparingen</span>
+                <span><span class="chk">✓</span> Subsidiegids per maatregel</span>
+                <span><span class="chk">✓</span> Kostenoverzicht tabel</span>
                 <span><span class="chk">✓</span> PDF download</span>
                 <span><span class="chk">✓</span> Veilig via Stripe</span>
               </div>
             </div>
             """, unsafe_allow_html=True)
             st.link_button(
-                "Volledig rapport ontgrendelen voor €4,95 →",
+                "🔒  Volledig rapport voor €4,95",
                 stripe_url,
-                use_container_width=True,
             )
         else:
-            st.markdown(f'<div class="rapport-body">{rest}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="rcard-body">{rest}</div>', unsafe_allow_html=True)
             pdf_bytes = create_pdf(rapport, adres_input, bouwjaar, oppervlakte)
             safe_name = adres_input.replace(" ", "_").replace(",", "").replace("/", "-")
+            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
             st.download_button(
                 label="⬇️  Download rapport (testmodus)",
                 data=pdf_bytes,
                 file_name=f"WoningCheckAI_{safe_name}.pdf",
                 mime="application/pdf",
-                use_container_width=True,
             )
 
         st.caption("Dit rapport is indicatief op basis van officiële BAG-data en AI-analyse. Het vervangt geen officieel energielabel.")
 
 
 # ─────────────────────────────────────────────────────────────
-#  HOE HET WERKT + FEATURES
+#  HOE HET WERKT + FEATURES + STATS
 # ─────────────────────────────────────────────────────────────
 if not scan_clicked and not betaald:
-
     st.markdown("""
-    <div class="how-section">
-      <div class="how-title">Hoe het werkt</div>
+    <hr class="divider">
+
+    <div class="how">
+      <div class="how-h">Hoe het werkt</div>
       <div class="steps">
         <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-text">
-            <div class="step-title">Vul uw adres in</div>
-            <div class="step-desc">Wij zoeken uw woning op in het Kadaster en halen bouwjaar en oppervlakte op.</div>
+          <div class="step-n">1</div>
+          <div>
+            <div class="step-t">Vul uw adres in</div>
+            <div class="step-d">Wij zoeken uw woning op in het Kadaster en halen bouwjaar, oppervlakte en locatie op.</div>
           </div>
         </div>
         <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-text">
-            <div class="step-title">AI analyseert uw woning</div>
-            <div class="step-desc">Claude AI genereert een persoonlijk verduurzamingsadvies op basis van uw woningkenmerken.</div>
+          <div class="step-n">2</div>
+          <div>
+            <div class="step-t">AI analyseert uw woning</div>
+            <div class="step-d">Claude AI genereert op basis van uw woningkenmerken een persoonlijk verduurzamingsadvies.</div>
           </div>
         </div>
         <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-text">
-            <div class="step-title">Ontvang uw rapport</div>
-            <div class="step-desc">Gratis preview, of het volledige rapport met subsidiegids en PDF voor €4,95.</div>
+          <div class="step-n">3</div>
+          <div>
+            <div class="step-t">Ontvang uw rapport</div>
+            <div class="step-d">Gratis preview direct zichtbaar. Volledig rapport met subsidiegids en PDF voor €4,95.</div>
           </div>
         </div>
       </div>
     </div>
-    """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="features">
-      <div class="feature">
-        <div class="feature-icon">⚡</div>
-        <div class="feature-title">Klaar in 30 seconden</div>
-        <div class="feature-desc">Direct een volledig besparingsplan — geen wachttijd, geen account nodig.</div>
+    <div class="feats">
+      <div class="feat">
+        <div class="feat-ic">⚡</div>
+        <div class="feat-t">Klaar in 30 seconden</div>
+        <div class="feat-d">Direct een volledig besparingsplan, geen wachttijd en geen account nodig.</div>
       </div>
-      <div class="feature">
-        <div class="feature-icon">🏛️</div>
-        <div class="feature-title">Officiële overheidsdata</div>
-        <div class="feature-desc">Bouwjaar en oppervlakte direct uit het Kadaster BAG-register.</div>
+      <div class="feat">
+        <div class="feat-ic">🏛️</div>
+        <div class="feat-t">Officiële overheidsdata</div>
+        <div class="feat-d">Bouwjaar en oppervlakte direct uit het Kadaster BAG-register.</div>
       </div>
-      <div class="feature">
-        <div class="feature-icon">🏦</div>
-        <div class="feature-title">Subsidiegids inbegrepen</div>
-        <div class="feature-desc">Stap-voor-stap ISDE, SEEH en meer — inclusief directe links naar aanvragen.</div>
+      <div class="feat">
+        <div class="feat-ic">🏦</div>
+        <div class="feat-t">Subsidiegids inbegrepen</div>
+        <div class="feat-d">Stap-voor-stap ISDE, SEEH en meer — met directe aanvraaglinks.</div>
       </div>
-      <div class="feature">
-        <div class="feature-icon">📄</div>
-        <div class="feature-title">Professionele PDF</div>
-        <div class="feature-desc">Download uw rapport — klaar om te delen met uw aannemer of adviseur.</div>
+      <div class="feat">
+        <div class="feat-ic">📄</div>
+        <div class="feat-t">Professionele PDF</div>
+        <div class="feat-d">Download uw rapport en deel het met uw aannemer of energieadviseur.</div>
       </div>
     </div>
-    """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="social-proof">
-      <div class="social-proof-stats">
-        <div class="sp-stat">
-          <div class="sp-number">2.400+</div>
-          <div class="sp-label">Woningen gescand</div>
-        </div>
-        <div class="sp-stat">
-          <div class="sp-number">€847</div>
-          <div class="sp-label">Gem. besparing/jaar</div>
-        </div>
-        <div class="sp-stat">
-          <div class="sp-number">30 sec</div>
-          <div class="sp-label">Gemiddelde levertijd</div>
-        </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-n">2.400+</div>
+        <div class="stat-l">Woningen gescand</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n">€847</div>
+        <div class="stat-l">Gem. besparing/jaar</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n">30 sec</div>
+        <div class="stat-l">Gemiddelde levertijd</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
