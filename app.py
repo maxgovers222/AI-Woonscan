@@ -777,6 +777,45 @@ div[data-testid="stLinkButton"] > a:hover {
   .stats { gap: 30px; }
   .wcard-metrics { grid-template-columns: 1fr; }
 }
+
+/* 1. Verwijder lijnen uit het rapport */
+.rcard-body h1, .rcard-body h2 {
+    font-family: 'Playfair Display', serif;
+    border-bottom: none !important; /* Verwijdert de lijn onder koppen */
+    margin: 1.5em 0 .5em;
+}
+
+.rcard-body hr {
+    display: none !important; /* Verbergt de horizontale scheidingslijnen */
+}
+
+/* 2. Verbeter spacing (minder witruimte) */
+[data-testid="stVerticalBlock"] {
+    gap: 0rem !important; /* Haalt de standaard Streamlit ruimte tussen blokken weg */
+}
+
+.rcard {
+    margin-top: -10px !important; /* Trekt het rapport dichter naar de kaart toe */
+}
+
+/* 3. Styling voor de knop IN het betaalveld */
+.paywall-btn {
+    display: inline-block;
+    background: var(--green);
+    color: #fff !important;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: .95rem;
+    padding: 14px 44px;
+    text-decoration: none !important;
+    box-shadow: 0 4px 20px var(--green-glow);
+    transition: transform .2s;
+    margin-top: 20px;
+}
+.paywall-btn:hover {
+    transform: translateY(-2px);
+    background: var(--green-dk);
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -950,6 +989,7 @@ if scan_clicked:
         """, unsafe_allow_html=True)
 
         st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
+        # Verwijder eventuele st.markdown("<div style='height:8px'></div>") regels hieronder
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
         # Rapport ophalen
@@ -981,7 +1021,7 @@ if scan_clicked:
         st.markdown(f'<div class="rcard-body"><div class="pfade">{preview}</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Betaalmuur
+        # Betaalmuur met geïntegreerde knop
         stripe_url = maak_stripe_url(adres_input)
 
         if stripe_url:
@@ -995,14 +1035,14 @@ if scan_clicked:
               <div class="paywall-price">€4,95</div>
               <div class="paywall-per">eenmalig · direct beschikbaar</div>
               <div class="paywall-features">
-                <span><span class="chk">✓</span> Alle maatregelen + besparingen</span>
-                <span><span class="chk">✓</span> Subsidiegids per maatregel</span>
-                <span><span class="chk">✓</span> Kostenoverzicht tabel</span>
+                <span><span class="chk">✓</span> Alle maatregelen</span>
+                <span><span class="chk">✓</span> Subsidiegids</span>
                 <span><span class="chk">✓</span> PDF download</span>
-                <span><span class="chk">✓</span> Veilig via Stripe</span>
               </div>
+              <a href="{stripe_url}" class="paywall-btn">🔒 Volledig rapport ontgrendelen</a>
             </div>
             """, unsafe_allow_html=True)
+            # Verwijder de oude st.link_button regel die hieronder stond!
             st.link_button(
                 "🔒  Volledig rapport voor €4,95",
                 stripe_url,
