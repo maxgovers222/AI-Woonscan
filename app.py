@@ -751,7 +751,7 @@ div[data-testid="stLinkButton"] > a:hover {
   min-height: 220px !important;
   max-height: 220px !important;
   border: 1px solid var(--border) !important;
-  margin-bottom: 6px !important;
+  margin: 0 !important;
 }
 
 /* Spinner */
@@ -794,11 +794,31 @@ div[data-testid="stLinkButton"] > a:hover {
 
 /* 2. Verbeter spacing (minder witruimte) */
 [data-testid="stVerticalBlock"] {
-    gap: 0rem !important; /* Haalt de standaard Streamlit ruimte tussen blokken weg */
+    gap: 0rem !important;
+}
+
+/* Collapse all element container default padding */
+[data-testid="stElementContainer"] {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Kaart (map) wrapper — geen extra ruimte */
+[data-testid="stElementContainer"]:has([data-testid="stDeckGlJsonChart"]) {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* rcard opening/closing tags zijn losse markdown-blokken — geen ruimte */
+[data-testid="stElementContainer"]:has(> div > [data-testid="stMarkdownContainer"]) {
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .rcard {
-    margin-top: 0 !important; /* Geen overlap-hack: nette spacing via componentmarges */
+    margin-top: 0 !important;
 }
 
 /* 3. Styling voor de knop IN het betaalveld */
