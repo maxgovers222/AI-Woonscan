@@ -939,7 +939,6 @@ if not betaald:
     </div>
     """, unsafe_allow_html=True)
 
-st.markdown('<div class="search-wrap">', unsafe_allow_html=True)
 st.markdown('<div class="search-label">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
 adres_input = st.text_input(
     label="adres",
@@ -947,7 +946,6 @@ adres_input = st.text_input(
     placeholder="Bijv. Keizersgracht 123, Amsterdam",
 )
 scan_clicked = st.button("Analyseer dit adres →")
-st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("""
 <div class="trust">
