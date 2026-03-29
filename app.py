@@ -1023,7 +1023,9 @@ if scan_clicked:
         </div>
         """, unsafe_allow_html=True)
 
-        st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
+        # Houd de flow compact: kaart standaard ingeklapt zodat er geen grote lege ruimte ontstaat.
+        with st.expander("Bekijk kaartlocatie", expanded=False):
+            st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
 
         # Rapport ophalen
         bestaand = zoek_bestaand_rapport(adres_input)
