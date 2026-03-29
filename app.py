@@ -744,13 +744,25 @@ div[data-testid="stLinkButton"] > a:hover {
 
 /* Map */
 [data-testid="stDeckGlJsonChart"],
-[data-testid="stDeckGlJsonChart"] > div {
+[data-testid="stDeckGlJsonChart"] > div,
+[data-testid="stDeckGlJsonChart"] canvas,
+[data-testid="stDeckGlJsonChart"] iframe {
   border-radius: var(--r) !important;
   overflow: hidden !important;
   height: 220px !important;
   min-height: 220px !important;
   max-height: 220px !important;
   border: 1px solid var(--border) !important;
+  margin: 0 !important;
+}
+
+/* Forceer ook de pydeck wrappers zodat er geen verborgen lege hoogte blijft. */
+[data-testid="stElementContainer"]:has([data-testid="stDeckGlJsonChart"]) > div,
+[data-testid="stElementContainer"]:has([data-testid="stDeckGlJsonChart"]) [style*="height"] {
+  height: 220px !important;
+  min-height: 220px !important;
+  max-height: 220px !important;
+  padding: 0 !important;
   margin: 0 !important;
 }
 
