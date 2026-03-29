@@ -18,48 +18,59 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────────────────────
-#  STRIPE HELPER
+#  STRIPE
 #  Hoe het werkt:
-#  1. Gebruiker klikt op "Koop PDF voor €4,95"
-#  2. App stuurt hem naar een Stripe betaalpagina
-#  3. Na betaling stuurt Stripe hem terug naar onze app
-#     met ?betaald=ja&adres=... in de URL
-#  4. App detecteert die terugkeer en toont de downloadknop
+#  1. Gebruiker scant een adres → ziet gratis preview
+#  2. Klikt op betaalknop → adres wordt opgeslagen in sessie
+#  3. Stripe stuurt hem terug naar ?betaald=ja
+#  4. App leest adres uit sessie → toont volledig rapport + PDF
 # ─────────────────────────────────────────────────────────────
 
 STRIPE_PAYMENT_LINK = os.getenv("STRIPE_PAYMENT_LINK", "")
-# Dit is de link die je in Stripe aanmaakt (begint met https://buy.stripe.com/...)
-# Zie instructies onderaan dit bestand
+APP_URL             = os.getenv("APP_URL", "https://ai-woonscan-qdkwobbescefekt7zxo6j6.streamlit.app")
 
 
-def maak_stripe_url(adres: str) -> str:
-    """
-    Voegt het adres toe aan de Stripe betaallink als metadata.
-    Na betaling stuurt Stripe de gebruiker terug met dit adres in de URL,
-    zodat we weten voor welk adres er betaald is.
-    """
+def maak_stripe_url() -> str:
+    """Geeft de Stripe betaallink terug met success URL naar onze app."""
     if not STRIPE_PAYMENT_LINK:
         return ""
-    # We coderen het adres in de success URL zodat we het terugkrijgen
-    adres_encoded = urllib.parse.quote(adres)
-    app_url = os.getenv("APP_URL", "https://woningcheckai.nl")
-    success_url = f"{app_url}?betaald=ja&adres={adres_encoded}"
-    return f"{STRIPE_PAYMENT_LINK}?success_url={urllib.parse.quote(success_url)}"
+    success_url = urllib.parse.quote(f"{APP_URL}?betaald=ja")
+    return f"{STRIPE_PAYMENT_LINK}?success_url={success_url}"
 
 
-def controleer_betaling() -> tuple[bool, str]:
+def controleer_betaling() -> bool:
+    """Geeft True terug als Stripe de gebruiker heeft teruggestuurd na betaling."""
+    return st.query_params.get("betaald", "") == "ja"
+
+
+# ─────────────────────────────────────────────────────────────
+#  RAPPORT SPLITTER
+#  Knipt het AI-rapport op in een gratis preview en een betaald deel.
+#  De gratis preview bevat alles t/m het eerste kopje na het
+#  besparingspotentieel. De rest is verborgen achter de betaalmuur.
+# ─────────────────────────────────────────────────────────────
+
+def splits_rapport(rapport: str) -> tuple[str, str]:
     """
-    Controleert of de gebruiker zojuist terugkomt van Stripe.
-    Geeft (True, adres) terug als er betaald is, anders (False, "").
-
-    Hoe: Stripe stuurt de gebruiker terug naar de success_url die wij
-    hebben meegegeven. Die URL bevat ?betaald=ja&adres=...
-    Streamlit leest die parameters uit via st.query_params.
+    Geeft (preview, rest) terug.
+    Preview = eerste twee secties (Woningprofiel + Besparingspotentieel).
+    Rest    = alles daarna (maatregelen, tabel, tijdlijn, subsidies).
     """
-    params = st.query_params
-    betaald = params.get("betaald", "") == "ja"
-    adres   = urllib.parse.unquote(params.get("adres", ""))
-    return betaald, adres
+    lijnen    = rapport.split("\n")
+    kopjes    = 0
+    splitpunt = len(lijnen)
+
+    for i, lijn in enumerate(lijnen):
+        if lijn.startswith("## ") or lijn.startswith("# "):
+            kopjes += 1
+            # Na het 3e kopje (Aanbevelingen) knippen we
+            if kopjes == 3:
+                splitpunt = i
+                break
+
+    preview = "\n".join(lijnen[:splitpunt]).strip()
+    rest    = "\n".join(lijnen[splitpunt:]).strip()
+    return preview, rest
 
 
 # ─────────────────────────────────────────────────────────────
@@ -70,7 +81,6 @@ def create_pdf(rapport_tekst: str, adres: str, bouwjaar, oppervlakte) -> bytes:
     pdf.add_page()
     pdf.set_margins(20, 20, 20)
 
-    # Header-blok
     pdf.set_fill_color(15, 40, 80)
     pdf.rect(0, 0, 210, 42, "F")
     pdf.set_text_color(255, 255, 255)
@@ -82,10 +92,8 @@ def create_pdf(rapport_tekst: str, adres: str, bouwjaar, oppervlakte) -> bytes:
     pdf.set_font("Arial", "I", 9)
     pdf.set_text_color(180, 210, 255)
     pdf.cell(210, 6, f"Gegenereerd op {datetime.date.today().strftime('%d %B %Y')}", align="C", ln=True)
-
     pdf.ln(12)
 
-    # Adres & metadata
     pdf.set_text_color(15, 40, 80)
     pdf.set_font("Arial", "B", 13)
     pdf.cell(0, 8, f"Adres: {adres}", ln=True)
@@ -99,7 +107,6 @@ def create_pdf(rapport_tekst: str, adres: str, bouwjaar, oppervlakte) -> bytes:
     pdf.cell(0, 7, f"Gebruiksoppervlakte: {oppervlakte} m2", ln=True)
     pdf.ln(5)
 
-    # Rapport body
     pdf.set_text_color(25, 25, 25)
     pdf.set_font("Arial", "", 11)
     safe_text = rapport_tekst.encode("latin-1", "replace").decode("latin-1")
@@ -107,7 +114,6 @@ def create_pdf(rapport_tekst: str, adres: str, bouwjaar, oppervlakte) -> bytes:
         safe_text = safe_text.replace(sym, "")
     pdf.multi_cell(0, 7, safe_text)
 
-    # Footer
     pdf.set_y(-18)
     pdf.set_draw_color(200, 200, 200)
     pdf.line(20, pdf.get_y(), 190, pdf.get_y())
@@ -132,9 +138,6 @@ def cached_advies(bouwjaar, oppervlakte, woningtype: str) -> str:
     return genereer_energie_advies(bouwjaar, oppervlakte, woningtype)
 
 
-# ─────────────────────────────────────────────────────────────
-#  ENERGIELABEL SCHATTING
-# ─────────────────────────────────────────────────────────────
 def schat_energielabel(bouwjaar) -> str:
     try:
         jaar = int(bouwjaar)
@@ -149,6 +152,21 @@ def schat_energielabel(bouwjaar) -> str:
 
 
 # ─────────────────────────────────────────────────────────────
+#  SESSION STATE INITIALISATIE
+#  We slaan het adres op in de sessie zodat we het nog weten
+#  nadat Stripe de gebruiker heeft teruggestuurd.
+# ─────────────────────────────────────────────────────────────
+if "huidig_adres" not in st.session_state:
+    st.session_state.huidig_adres = ""
+if "huidig_rapport" not in st.session_state:
+    st.session_state.huidig_rapport = ""
+if "huidig_bouwjaar" not in st.session_state:
+    st.session_state.huidig_bouwjaar = ""
+if "huidig_oppervlakte" not in st.session_state:
+    st.session_state.huidig_oppervlakte = ""
+
+
+# ─────────────────────────────────────────────────────────────
 #  CUSTOM CSS
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
@@ -160,7 +178,6 @@ st.markdown("""
     --navy-mid: #1A3A6B;
     --teal:     #0EA87E;
     --teal-lt:  #12C991;
-    --amber:    #F59E0B;
     --bg:       #F4F6FA;
     --surface:  #FFFFFF;
     --text:     #1C2333;
@@ -179,7 +196,6 @@ st.markdown("""
   [data-testid="stHeader"] { background: transparent !important; }
   footer, #MainMenu { display: none !important; }
 
-  /* ── Hero ─────────────────────────────────────────── */
   .hero {
     background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 55%, #1E4D8C 100%);
     border-radius: var(--r); padding: 52px 40px 46px;
@@ -203,14 +219,11 @@ st.markdown("""
     letter-spacing:1.3px; text-transform:uppercase;
     padding:4px 14px; border-radius:999px; margin-bottom:18px;
   }
-  .hero-logo {
-    font-family:'Syne',sans-serif; font-weight:800;
-    font-size:2.3rem; color:#fff; letter-spacing:-.5px; line-height:1;
-  }
+  .hero-logo { font-family:'Syne',sans-serif; font-weight:800;
+               font-size:2.3rem; color:#fff; letter-spacing:-.5px; line-height:1; }
   .hero-logo span { color:var(--teal-lt); }
   .hero-sub { font-weight:300; font-size:1.05rem; color:rgba(255,255,255,.70); margin-top:10px; }
 
-  /* ── Cards ────────────────────────────────────────── */
   .card {
     background:var(--surface); border:1px solid var(--border);
     border-radius:var(--r); padding:30px 32px;
@@ -222,94 +235,87 @@ st.markdown("""
     padding-bottom:14px; margin-bottom:20px;
   }
 
-  /* ── Metric pills ─────────────────────────────────── */
   .pills { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
-  .pill {
-    flex:1; min-width:110px; background:var(--bg);
-    border:1px solid var(--border); border-radius:10px;
-    padding:14px 16px; text-align:center;
-  }
+  .pill { flex:1; min-width:110px; background:var(--bg);
+          border:1px solid var(--border); border-radius:10px;
+          padding:14px 16px; text-align:center; }
   .pill-lbl { font-size:.68rem; font-weight:500; letter-spacing:.9px;
               text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
   .pill-val { font-family:'Syne',sans-serif; font-weight:700;
               font-size:1.45rem; color:var(--navy); line-height:1; }
   .pill-unit { font-size:.78rem; color:var(--muted); margin-top:3px; }
 
-  /* ── Accent bar ───────────────────────────────────── */
   .accent { height:4px; border-radius:4px; margin-bottom:22px;
             background:linear-gradient(90deg,var(--teal),var(--teal-lt)); }
 
-  /* ── Report body ──────────────────────────────────── */
   .report-body { font-size:.97rem; line-height:1.78; color:var(--text); }
-  .report-body h2,.report-body h3 {
-    font-family:'Syne',sans-serif; color:var(--navy); margin-top:1.3em;
-  }
+  .report-body h2,.report-body h3 { font-family:'Syne',sans-serif; color:var(--navy); margin-top:1.3em; }
   .report-body table { width:100%; border-collapse:collapse; font-size:.88rem; margin:1em 0; }
   .report-body th { background:var(--navy); color:#fff; padding:8px 12px; text-align:left; }
   .report-body td { padding:7px 12px; border-bottom:1px solid var(--border); }
   .report-body tr:nth-child(even) td { background:#F8FAFD; }
 
-  /* ── Betaalmuur blok ──────────────────────────────── */
+  /* Vervaag-effect onderaan de preview */
+  .preview-fade {
+    position:relative; overflow:hidden; max-height:320px;
+  }
+  .preview-fade::after {
+    content:''; position:absolute; bottom:0; left:0; right:0;
+    height:140px;
+    background:linear-gradient(transparent, var(--surface));
+    pointer-events:none;
+  }
+
+  /* Betaalmuur */
   .paywall {
     background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
-    border: 2px solid #F59E0B;
-    border-radius: var(--r);
-    padding: 28px 32px;
-    text-align: center;
-    margin-bottom: 22px;
+    border: 2px solid #F59E0B; border-radius: var(--r);
+    padding: 28px 32px; text-align: center; margin-bottom: 22px;
     box-shadow: 0 4px 20px rgba(245,158,11,.15);
   }
-  .paywall-title {
-    font-family:'Syne',sans-serif; font-weight:800;
-    font-size:1.3rem; color:var(--navy); margin-bottom:8px;
-  }
-  .paywall-sub {
-    font-size:.93rem; color:#92400E; margin-bottom:20px; line-height:1.6;
-  }
-  .paywall-price {
-    font-family:'Syne',sans-serif; font-weight:800;
-    font-size:2rem; color:var(--navy);
-  }
+  .paywall-title { font-family:'Syne',sans-serif; font-weight:800;
+                   font-size:1.25rem; color:var(--navy); margin-bottom:8px; }
+  .paywall-sub { font-size:.92rem; color:#92400E; margin-bottom:18px; line-height:1.6; }
+  .paywall-price { font-family:'Syne',sans-serif; font-weight:800;
+                   font-size:2rem; color:var(--navy); margin-bottom:4px; }
   .paywall-price span { font-size:1rem; font-weight:400; color:var(--muted); }
-  .paywall-features {
-    display:flex; justify-content:center; gap:20px;
-    flex-wrap:wrap; margin:16px 0 22px; font-size:.83rem; color:#78350F;
-  }
-  .pf { display:flex; align-items:center; gap:5px; }
+  .paywall-features { display:flex; justify-content:center; gap:16px;
+                      flex-wrap:wrap; margin:14px 0 20px; font-size:.82rem; color:#78350F; }
 
-  /* ── Succes banner ────────────────────────────────── */
+  .stripe-btn {
+    display:block; width:100%;
+    background:linear-gradient(135deg,#F59E0B 0%,#D97706 100%);
+    color:#fff !important; text-decoration:none !important;
+    font-family:'Syne',sans-serif; font-weight:800; font-size:1.05rem;
+    padding:15px 24px; border-radius:10px; text-align:center;
+    box-shadow:0 4px 16px rgba(245,158,11,.40);
+    transition:transform .15s,box-shadow .15s; cursor:pointer;
+  }
+  .stripe-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(245,158,11,.50); }
+
+  /* Succes banner */
   .succes-banner {
     background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
-    border: 2px solid var(--teal);
-    border-radius: var(--r);
-    padding: 20px 28px;
-    text-align: center;
-    margin-bottom: 22px;
+    border: 2px solid var(--teal); border-radius: var(--r);
+    padding: 22px 28px; text-align: center; margin-bottom: 22px;
   }
-  .succes-banner h3 {
-    font-family:'Syne',sans-serif; color:#065F46; margin:0 0 6px;
-  }
+  .succes-banner h3 { font-family:'Syne',sans-serif; color:#065F46; margin:0 0 6px; }
   .succes-banner p { color:#047857; margin:0; font-size:.9rem; }
 
-  /* ── Trust bar ────────────────────────────────────── */
   .trust { display:flex; align-items:center; justify-content:center;
            gap:26px; padding:16px 0 2px; flex-wrap:wrap; }
   .ti { display:flex; align-items:center; gap:7px; font-size:.80rem; color:var(--muted); }
   .td { width:7px; height:7px; background:var(--teal); border-radius:50%; flex-shrink:0; }
 
-  /* ── Feature strip ────────────────────────────────── */
   .features { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:28px; }
-  .feat {
-    flex:1; min-width:140px; background:var(--surface);
-    border:1px solid var(--border); border-radius:12px;
-    padding:22px 20px; box-shadow:var(--sh);
-  }
+  .feat { flex:1; min-width:140px; background:var(--surface);
+          border:1px solid var(--border); border-radius:12px;
+          padding:22px 20px; box-shadow:var(--sh); }
   .feat-icon { font-size:1.5rem; margin-bottom:10px; }
   .feat-title { font-family:'Syne',sans-serif; font-weight:700;
                 font-size:.95rem; color:var(--navy); margin-bottom:6px; }
   .feat-desc { font-size:.83rem; color:var(--muted); line-height:1.5; }
 
-  /* ── Widget overrides ─────────────────────────────── */
   div[data-testid="stTextInput"] input {
     border:2px solid var(--border) !important; border-radius:10px !important;
     padding:14px 18px !important; font-size:1rem !important;
@@ -340,32 +346,15 @@ st.markdown("""
     background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%) !important;
     border:none !important; border-radius:10px !important; color:#fff !important;
     font-family:'Syne',sans-serif !important; font-weight:700 !important;
-    font-size:1rem !important; padding:16px 24px !important;
+    font-size:1.05rem !important; padding:16px 24px !important;
     box-shadow:0 4px 16px rgba(15,40,80,.28) !important;
     transition:transform .15s,box-shadow .15s !important;
-    font-size:1.05rem !important;
   }
   div[data-testid="stDownloadButton"]>button:hover {
     transform:translateY(-2px) !important;
     box-shadow:0 8px 24px rgba(15,40,80,.38) !important;
   }
   [data-testid="stAlert"] { border-radius:10px !important; }
-
-  /* ── Stripe betaalknop ────────────────────────────── */
-  .stripe-btn {
-    display:block; width:100%;
-    background:linear-gradient(135deg,#F59E0B 0%,#D97706 100%);
-    color:#fff !important; text-decoration:none !important;
-    font-family:'Syne',sans-serif; font-weight:800; font-size:1.1rem;
-    padding:16px 24px; border-radius:10px; text-align:center;
-    box-shadow:0 4px 16px rgba(245,158,11,.40);
-    transition:transform .15s,box-shadow .15s;
-    cursor:pointer; border:none;
-  }
-  .stripe-btn:hover {
-    transform:translateY(-2px);
-    box-shadow:0 8px 24px rgba(245,158,11,.50);
-  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -375,7 +364,7 @@ st.markdown("""
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-  <div class="hero-badge">✦ Gratis rapport &nbsp;·&nbsp; AI-gedreven &nbsp;·&nbsp; Officiële Kadaster BAG-data</div>
+  <div class="hero-badge">✦ Preview gratis &nbsp;·&nbsp; AI-gedreven &nbsp;·&nbsp; Officiële Kadaster BAG-data</div>
   <div class="hero-logo">Woning<span>Check</span>AI</div>
   <div class="hero-sub">Vul een adres in — ontvang binnen seconden een persoonlijk verduurzamingsrapport</div>
 </div>
@@ -383,54 +372,51 @@ st.markdown("""
 
 
 # ─────────────────────────────────────────────────────────────
-#  BETALING TERUGKEER DETECTIE
-#  Als Stripe de gebruiker terugstuurde na een betaling,
-#  tonen we direct de downloadknop voor dat adres.
+#  BETALING TERUGKEER
+#  Stripe stuurt de gebruiker terug met ?betaald=ja in de URL.
+#  We lezen het adres uit de sessie (daar hebben we het opgeslagen
+#  voordat de gebruiker naar Stripe ging).
 # ─────────────────────────────────────────────────────────────
-betaald, betaald_adres = controleer_betaling()
+betaald = controleer_betaling()
 
-if betaald and betaald_adres:
+if betaald and st.session_state.huidig_adres:
+    adres_betaald     = st.session_state.huidig_adres
+    rapport_betaald   = st.session_state.huidig_rapport
+    bouwjaar_betaald  = st.session_state.huidig_bouwjaar
+    oppervlak_betaald = st.session_state.huidig_oppervlakte
+
     st.markdown("""
     <div class="succes-banner">
       <h3>✅ Betaling geslaagd!</h3>
-      <p>Bedankt voor uw aankoop. Uw PDF rapport staat hieronder klaar.</p>
+      <p>Bedankt! Uw volledige rapport staat hieronder klaar om te downloaden.</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Haal het rapport op voor dit adres (uit database of cache)
-    with st.spinner("Rapport ophalen…"):
-        bag_data_betaald = cached_bag_data(betaald_adres)
+    # Volledig rapport tonen
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="card-title">📄 &nbsp;Uw Volledige Verduurzamingsplan</div>', unsafe_allow_html=True)
+    st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="report-body">{rapport_betaald}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    if bag_data_betaald:
-        rapport_betaald = zoek_bestaand_rapport(betaald_adres)
-        if not rapport_betaald:
-            with st.spinner("Rapport genereren…"):
-                rapport_betaald = cached_advies(
-                    bag_data_betaald.get("bouwjaar", "Onbekend"),
-                    bag_data_betaald.get("oppervlakte", "Onbekend"),
-                    bag_data_betaald.get("woningtype", "Woning"),
-                )
+    # PDF download
+    pdf_bytes = create_pdf(rapport_betaald, adres_betaald, bouwjaar_betaald, oppervlak_betaald)
+    safe_name = adres_betaald.replace(" ", "_").replace(",", "").replace("/", "-")
+    st.download_button(
+        label="📄  Download uw PDF Rapport",
+        data=pdf_bytes,
+        file_name=f"WoningCheckAI_{safe_name}.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+    )
 
-        pdf_bytes = create_pdf(
-            rapport_betaald,
-            betaald_adres,
-            bag_data_betaald.get("bouwjaar", "Onbekend"),
-            bag_data_betaald.get("oppervlakte", "Onbekend"),
-        )
-        safe_name = betaald_adres.replace(" ", "_").replace(",", "").replace("/", "-")
-
-        st.download_button(
-            label="📄  Download uw PDF Rapport",
-            data=pdf_bytes,
-            file_name=f"WoningCheckAI_{safe_name}.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-        )
-        st.caption("Sla de PDF op — u kunt hem altijd opnieuw downloaden door dit adres opnieuw in te voeren en te betalen.")
-    else:
-        st.error("Adres niet gevonden. Neem contact op via info@woningcheckai.nl")
-
+    # Reset betaling URL zodat de banner verdwijnt bij volgende scan
+    st.query_params.clear()
     st.markdown("---")
+
+elif betaald and not st.session_state.huidig_adres:
+    # Sessie verlopen (bijv. andere browser geopend) — vraag adres opnieuw
+    st.warning("Uw sessie is verlopen. Voer uw adres opnieuw in om uw rapport op te halen.")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -442,15 +428,15 @@ adres_input = st.text_input(
     label_visibility="collapsed",
     placeholder="Bijv. Keizersgracht 123, Amsterdam",
 )
-scan_clicked = st.button("⚡  Genereer Gratis Energiescan", use_container_width=True)
+scan_clicked = st.button("⚡  Genereer Gratis Preview", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("""
 <div class="trust">
-  <span class="ti"><span class="td"></span>Rapport gratis</span>
+  <span class="ti"><span class="td"></span>Preview gratis</span>
   <span class="ti"><span class="td"></span>Officiële BAG-data</span>
   <span class="ti"><span class="td"></span>Claude AI analyse</span>
-  <span class="ti"><span class="td"></span>PDF voor €4,95</span>
+  <span class="ti"><span class="td"></span>Volledig rapport €4,95</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -502,66 +488,76 @@ if scan_clicked:
         st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Stap 3: Rapport — eerst database checken
-        bestaand_rapport = zoek_bestaand_rapport(adres_input)
-        if bestaand_rapport:
-            rapport = bestaand_rapport
-            st.info("💾 Dit adres is eerder gescand — rapport direct geladen.")
+        # Stap 3: Rapport genereren
+        bestaand = zoek_bestaand_rapport(adres_input)
+        if bestaand:
+            rapport = bestaand
         else:
             with st.spinner("AI schrijft uw persoonlijk verduurzamingsplan…"):
                 rapport = cached_advies(bouwjaar, oppervlakte, woningtype)
 
-        # Stap 4: Rapport tonen (gratis)
+        # Stap 4: Opslaan in sessie (voor na Stripe terugkeer)
+        st.session_state.huidig_adres      = adres_input
+        st.session_state.huidig_rapport    = rapport
+        st.session_state.huidig_bouwjaar   = bouwjaar
+        st.session_state.huidig_oppervlakte = oppervlakte
+
+        # Stap 5: Opslaan in Supabase (alleen als nog niet bestaat)
+        if not bestaand:
+            sla_scan_op(
+                adres=adres_input,
+                bag_data=data,
+                rapport=rapport,
+                energielabel=label,
+            )
+
+        # Stap 6: Gratis PREVIEW tonen (eerste 2 secties)
+        preview, rest = splits_rapport(rapport)
+
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">🤖 &nbsp;Persoonlijk Verduurzamingsplan</div>', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">🤖 &nbsp;Uw Verduurzamingsplan — Preview</div>', unsafe_allow_html=True)
         st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="report-body">{rapport}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="report-body preview-fade">{preview}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Stap 5: Opslaan in Supabase
-        sla_scan_op(
-            adres=adres_input,
-            bag_data=data,
-            rapport=rapport,
-            energielabel=label,
-        )
-
-        # Stap 6: BETAALMUUR voor PDF
-        stripe_url = maak_stripe_url(adres_input)
+        # Stap 7: BETAALMUUR
+        stripe_url = maak_stripe_url()
 
         if stripe_url:
-            # Stripe is geconfigureerd — toon betaalmuur
             st.markdown(f"""
             <div class="paywall">
-              <div class="paywall-title">📄 Download uw Persoonlijk PDF Rapport</div>
+              <div class="paywall-title">🔒 Ontgrendel uw volledige rapport</div>
               <div class="paywall-sub">
-                Het volledige rapport inclusief alle subsidie-aanvraaginstructies,<br>
-                kostenoverzicht en stap-voor-stap actieplan — klaar om te bewaren en te delen.
+                Bekijk alle aanbevelingen, het volledige kostenoverzicht,<br>
+                stap-voor-stap subsidie-aanvraaginstructies en download uw PDF.
               </div>
-              <div class="paywall-price">€4,95 <span>eenmalig</span></div>
+              <div class="paywall-price">€4,95 <span>eenmalig &nbsp;·&nbsp; direct beschikbaar</span></div>
               <div class="paywall-features">
-                <span class="pf">✓ Volledige PDF direct beschikbaar</span>
-                <span class="pf">✓ Subsidie-aanvraaginstructies</span>
-                <span class="pf">✓ Kostenoverzicht tabel</span>
-                <span class="pf">✓ Veilig betalen via Stripe</span>
+                <span>✓ Alle verduurzamingsmaatregelen</span>
+                <span>✓ Subsidie-aanvraaginstructies</span>
+                <span>✓ Kostenoverzicht tabel</span>
+                <span>✓ PDF rapport</span>
+                <span>✓ Veilig via Stripe</span>
               </div>
               <a href="{stripe_url}" class="stripe-btn" target="_self">
-                🔒 &nbsp; Koop PDF Rapport voor €4,95
+                🔒 &nbsp; Volledig rapport voor €4,95
               </a>
             </div>
             """, unsafe_allow_html=True)
         else:
-            # Stripe nog niet geconfigureerd — toon gewoon de downloadknop (testmodus)
+            # Testmodus: geen Stripe geconfigureerd
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown(f'<div class="report-body">{rest}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
             pdf_bytes = create_pdf(rapport, adres_input, bouwjaar, oppervlakte)
             safe_name = adres_input.replace(" ", "_").replace(",", "").replace("/", "-")
             st.download_button(
-                label="📄  Download volledig rapport als PDF",
+                label="📄  Download rapport (testmodus)",
                 data=pdf_bytes,
                 file_name=f"WoningCheckAI_{safe_name}.pdf",
                 mime="application/pdf",
                 use_container_width=True,
             )
-            st.caption("⚠️ Stripe nog niet geconfigureerd — PDF is tijdelijk gratis (testmodus).")
 
         st.caption(
             "ℹ️ Dit rapport is indicatief op basis van officiële BAG-data en AI-analyse. "
@@ -578,8 +574,8 @@ if not scan_clicked and not betaald:
     <div class="features">
       <div class="feat">
         <div class="feat-icon">⚡</div>
-        <div class="feat-title">Rapport gratis</div>
-        <div class="feat-desc">Vul een adres in en ontvang direct een volledig besparingsplan. Gratis.</div>
+        <div class="feat-title">Preview gratis</div>
+        <div class="feat-desc">Zie direct uw woningprofiel en besparingspotentieel — geen account nodig.</div>
       </div>
       <div class="feat">
         <div class="feat-icon">📊</div>
@@ -593,13 +589,12 @@ if not scan_clicked and not betaald:
       </div>
       <div class="feat">
         <div class="feat-icon">📄</div>
-        <div class="feat-title">PDF voor €4,95</div>
-        <div class="feat-desc">Download het volledige rapport als PDF om te bewaren of te delen met uw aannemer.</div>
+        <div class="feat-title">Volledig rapport €4,95</div>
+        <div class="feat-desc">Alle maatregelen, kostentabel en PDF — eenmalig en direct beschikbaar.</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-# Footer
 st.markdown("""
 <div style="text-align:center; padding:24px 0 8px; font-size:.78rem; color:#9CA3AF;">
   © 2026 WoningCheckAI.nl &nbsp;·&nbsp; Alle rechten voorbehouden<br>
