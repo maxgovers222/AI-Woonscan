@@ -2,7 +2,7 @@ import streamlit as st
 import datetime
 from adres_bag_gegevens import get_bag_data
 from ai_architect import genereer_energie_advies
-from database import sla_scan_op, is_supabase_actief
+from database import sla_scan_op, zoek_bestaand_rapport, is_supabase_actief
 from fpdf import FPDF
 
 # ─────────────────────────────────────────────────────────────
@@ -345,9 +345,15 @@ if scan_clicked:
         st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Stap 3: AI rapport  — correcte aanroep met losse argumenten
-        with st.spinner("AI schrijft uw persoonlijk verduurzamingsplan…"):
-            rapport = cached_advies(bouwjaar, oppervlakte, woningtype)
+        # Stap 3: Controleer eerst of dit adres al eerder gescand is
+        bestaand_rapport = zoek_bestaand_rapport(adres_input)
+
+        if bestaand_rapport:
+            rapport = bestaand_rapport
+            st.info("💾 Dit adres is eerder gescand — rapport direct geladen uit database.")
+        else:
+            with st.spinner("AI schrijft uw persoonlijk verduurzamingsplan…"):
+                rapport = cached_advies(bouwjaar, oppervlakte, woningtype)
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="card-title">🤖 &nbsp;Persoonlijk Verduurzamingsplan</div>', unsafe_allow_html=True)
