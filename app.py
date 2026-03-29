@@ -2,6 +2,7 @@ import streamlit as st
 import datetime
 from adres_bag_gegevens import get_bag_data
 from ai_architect import genereer_energie_advies
+from database import sla_scan_op, is_supabase_actief
 from fpdf import FPDF
 
 # ─────────────────────────────────────────────────────────────
@@ -354,7 +355,15 @@ if scan_clicked:
         st.markdown(f'<div class="report-body">{rapport}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Stap 4: PDF download
+        # Stap 4: Opslaan in Supabase (silent — crasht app niet bij fout)
+        sla_scan_op(
+            adres=adres_input,
+            bag_data=data,
+            rapport=rapport,
+            energielabel=label,
+        )
+
+        # Stap 5: PDF download
         pdf_bytes = create_pdf(rapport, adres_input, bouwjaar, oppervlakte)
         safe_name = adres_input.replace(" ", "_").replace(",", "").replace("/", "-")
 

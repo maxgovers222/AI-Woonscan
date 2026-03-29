@@ -3,3 +3,4 @@ anthropic>=0.25
 python-dotenv>=1.0
 fpdf2>=2.7
 requests>=2.31
+supabase>=2.4
