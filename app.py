@@ -3,6 +3,8 @@ import streamlit.components.v1 as components
 import datetime
 import os
 import urllib.parse
+import html
+import re
 from adres_bag_gegevens import get_bag_data
 from ai_architect import genereer_energie_advies
 from database import sla_scan_op, zoek_bestaand_rapport, haal_recente_scans_op, is_supabase_actief
@@ -51,6 +53,67 @@ def splits_rapport(rapport: str) -> tuple[str, str]:
                 splitpunt = i
                 break
     return "\n".join(lijnen[:splitpunt]).strip(), "\n".join(lijnen[splitpunt:]).strip()
+
+
+def markdown_naar_html(tekst: str) -> str:
+    if not tekst:
+        return ""
+
+    regels = (tekst or "").splitlines()
+    chunks = []
+    in_ul = False
+
+    for raw in regels:
+        line = raw.strip()
+        if not line:
+            if in_ul:
+                chunks.append("</ul>")
+                in_ul = False
+            continue
+
+        if line.startswith("### "):
+            if in_ul:
+                chunks.append("</ul>")
+                in_ul = False
+            content = html.escape(line[4:].strip())
+            chunks.append(f"<h3>{content}</h3>")
+            continue
+        if line.startswith("## "):
+            if in_ul:
+                chunks.append("</ul>")
+                in_ul = False
+            content = html.escape(line[3:].strip())
+            chunks.append(f"<h2>{content}</h2>")
+            continue
+        if line.startswith("# "):
+            if in_ul:
+                chunks.append("</ul>")
+                in_ul = False
+            content = html.escape(line[2:].strip())
+            chunks.append(f"<h1>{content}</h1>")
+            continue
+
+        if line.startswith("- ") or line.startswith("* "):
+            if not in_ul:
+                chunks.append("<ul>")
+                in_ul = True
+            item = html.escape(line[2:].strip())
+            item = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", item)
+            chunks.append(f"<li>{item}</li>")
+            continue
+
+        if in_ul:
+            chunks.append("</ul>")
+            in_ul = False
+
+        content = html.escape(line)
+        content = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", content)
+        chunks.append(f"<p>{content}</p>")
+
+    if in_ul:
+        chunks.append("</ul>")
+
+    return "".join(chunks)
 
 
 def create_pdf(rapport_tekst: str, adres: str, bouwjaar, oppervlakte) -> bytes:
@@ -179,7 +242,7 @@ html, body, .stApp,
   padding: 0 32px 80px !important;
 }
 
-[data-testid="stVerticalBlock"] { gap: 0 !important; }
+[data-testid="stVerticalBlock"] { gap: .45rem !important; }
 
 /* ── Navbar ───────────────────────────────────────── */
 .nav {
@@ -795,17 +858,17 @@ div[data-testid="stLinkButton"] > a:hover {
     display: none !important; /* Verbergt de horizontale scheidingslijnen */
 }
 
-/* 2. Verbeter spacing (minder witruimte) */
+/* 2. Verbeter spacing (meer rust, maar compact) */
 [data-testid="stVerticalBlock"] {
-    gap: 0rem !important;
+    gap: .45rem !important;
 }
 
 /* Collapse all element container default padding */
 [data-testid="stElementContainer"] {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
+    margin-top: .1rem !important;
+    margin-bottom: .1rem !important;
 }
 
 /* Kaart (map) wrapper — geen extra ruimte */
@@ -822,6 +885,7 @@ div[data-testid="stLinkButton"] > a:hover {
 
 .rcard {
     margin-top: 0 !important;
+    margin-bottom: 12px !important;
 }
 
 /* 3. Styling voor de knop IN het betaalveld */
@@ -904,7 +968,8 @@ if betaald:
             <span class="rcard-badge full">Volledig</span>
           </div>
         """, unsafe_allow_html=True)
-        st.markdown(f'<div class="rcard-body">{rapport_b}</div>', unsafe_allow_html=True)
+        rapport_b_html = markdown_naar_html(rapport_b)
+        st.markdown(f'<div class="rcard-body">{rapport_b_html}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         pdf_bytes = create_pdf(rapport_b, adres_b, bouwjaar_b, oppervlak_b)
@@ -1073,7 +1138,8 @@ if scan_clicked:
             <span class="rcard-badge">Preview</span>
           </div>
         """, unsafe_allow_html=True)
-        st.markdown(f'<div class="rcard-body"><div class="pfade">{preview}</div></div>', unsafe_allow_html=True)
+        preview_html = markdown_naar_html(preview)
+        st.markdown(f'<div class="rcard-body"><div class="pfade">{preview_html}</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # Betaalmuur met geïntegreerde knop
@@ -1099,7 +1165,8 @@ if scan_clicked:
             """, unsafe_allow_html=True)
             
         else:
-            st.markdown(f'<div class="rcard-body">{rest}</div>', unsafe_allow_html=True)
+            rest_html = markdown_naar_html(rest)
+            st.markdown(f'<div class="rcard-body">{rest_html}</div>', unsafe_allow_html=True)
             pdf_bytes = create_pdf(rapport, adres_input, bouwjaar, oppervlakte)
             safe_name = adres_input.replace(" ", "_").replace(",", "").replace("/", "-")
             st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
