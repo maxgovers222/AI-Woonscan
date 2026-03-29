@@ -209,7 +209,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 /* ── Hero ─────────────────────────────────────────── */
 .hero {
   text-align: center;
-  padding: 64px 0 52px;
+  padding: 64px 0 8px;
 }
 .hero-pill {
   display: inline-flex;
@@ -258,6 +258,8 @@ section[data-testid="stSidebar"] { display: none !important; }
   margin: 20px auto 0;
   max-width: 500px;
   text-align: center;
+  display: block;
+  width: 100%;
 }
 
 /* ── Search box ───────────────────────────────────── */
@@ -887,7 +889,7 @@ if not betaald:
 # ─────────────────────────────────────────────────────────────
 #  ZOEKFORMULIER
 # ─────────────────────────────────────────────────────────────
-st.markdown('<div style="text-align:center; font-size:.65rem; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:#7A8BA8; margin-bottom:10px; margin-top:8px;">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align:center; font-size:.65rem; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:#7A8BA8; margin-bottom:12px; margin-top:44px;">🔍 Voer een Nederlands adres in</div>', unsafe_allow_html=True)
 
 adres_input = st.text_input(
     label="adres",
