@@ -355,6 +355,22 @@ st.markdown("""
     box-shadow:0 8px 24px rgba(15,40,80,.38) !important;
   }
   [data-testid="stAlert"] { border-radius:10px !important; }
+
+  /* Stripe betaalknop via st.link_button */
+  div[data-testid="stLinkButton"] a {
+    display:block; width:100%;
+    background:linear-gradient(135deg,#F59E0B 0%,#D97706 100%) !important;
+    color:#fff !important; text-decoration:none !important;
+    font-family:'Syne',sans-serif !important; font-weight:800 !important;
+    font-size:1.05rem !important; padding:15px 24px !important;
+    border-radius:10px !important; text-align:center;
+    box-shadow:0 4px 16px rgba(245,158,11,.40) !important;
+    transition:transform .15s,box-shadow .15s !important;
+  }
+  div[data-testid="stLinkButton"] a:hover {
+    transform:translateY(-2px) !important;
+    box-shadow:0 8px 24px rgba(245,158,11,.50) !important;
+  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -539,11 +555,13 @@ if scan_clicked:
                 <span>✓ PDF rapport</span>
                 <span>✓ Veilig via Stripe</span>
               </div>
-              <a href="{stripe_url}" class="stripe-btn" target="_self">
-                🔒 &nbsp; Volledig rapport voor €4,95
-              </a>
             </div>
             """, unsafe_allow_html=True)
+            st.link_button(
+                "🔒  Volledig rapport voor €4,95",
+                stripe_url,
+                use_container_width=True,
+            )
         else:
             # Testmodus: geen Stripe geconfigureerd
             st.markdown('<div class="card">', unsafe_allow_html=True)
