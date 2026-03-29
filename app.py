@@ -578,21 +578,21 @@ if scan_clicked:
               </div>
             </div>
             """, unsafe_allow_html=True)
-            st.markdown(f'''
+            stripe_js = f"""
             <script>
             function gaNaarStripe() {{
                 window.top.location.href = "{stripe_url}";
             }}
             </script>
-            <button onclick="gaNaarStripe()" style="
-                width:100%; display:block;
+            <button onclick="gaNaarStripe()" style="width:100%;display:block;
                 background:linear-gradient(135deg,#F59E0B 0%,#D97706 100%);
-                color:#fff; border:none; cursor:pointer;
-                font-family:Syne,sans-serif; font-weight:800; font-size:1.05rem;
-                padding:15px 24px; border-radius:10px; text-align:center;
-                box-shadow:0 4px 16px rgba(245,158,11,.40);
-            ">🔒 &nbsp; Volledig rapport voor €4,95</button>
-            '''.format(stripe_url=stripe_url), unsafe_allow_html=True)
+                color:#fff;border:none;cursor:pointer;
+                font-family:Syne,sans-serif;font-weight:800;font-size:1.05rem;
+                padding:15px 24px;border-radius:10px;text-align:center;
+                box-shadow:0 4px 16px rgba(245,158,11,.40);">
+                🔒 &nbsp; Volledig rapport voor &#8364;4,95
+            </button>"""
+            st.markdown(stripe_js, unsafe_allow_html=True)
         else:
             # Testmodus: geen Stripe geconfigureerd
             st.markdown('<div class="card">', unsafe_allow_html=True)
