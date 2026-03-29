@@ -1,4 +1,5 @@
 import streamlit as st
+import pydeck as pdk
 import datetime
 import os
 import urllib.parse
@@ -756,16 +757,6 @@ div[data-testid="stLinkButton"] > a:hover {
   margin: 0 !important;
 }
 
-/* Forceer ook de pydeck wrappers zodat er geen verborgen lege hoogte blijft. */
-[data-testid="stElementContainer"]:has([data-testid="stDeckGlJsonChart"]) > div,
-[data-testid="stElementContainer"]:has([data-testid="stDeckGlJsonChart"]) [style*="height"] {
-  height: 220px !important;
-  min-height: 220px !important;
-  max-height: 220px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
 /* Spinner */
 [data-testid="stSpinner"] p {
   font-family: 'Outfit', sans-serif !important;
@@ -1023,9 +1014,27 @@ if scan_clicked:
         </div>
         """, unsafe_allow_html=True)
 
-        # Houd de flow compact: kaart standaard ingeklapt zodat er geen grote lege ruimte ontstaat.
-        with st.expander("Bekijk kaartlocatie", expanded=False):
-            st.map([{"lat": data["lat"], "lon": data["lon"]}], zoom=16)
+        # Altijd zichtbare kaart met vaste hoogte (voorkomt grote lege ruimte door auto-wrapper).
+        kaart_data = [{"lat": data["lat"], "lon": data["lon"]}]
+        kaart_layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=kaart_data,
+            get_position="[lon, lat]",
+            get_radius=95,
+            get_fill_color="[255, 69, 0, 140]",
+            pickable=False,
+        )
+        kaart_view = pdk.ViewState(latitude=data["lat"], longitude=data["lon"], zoom=16, pitch=0)
+        st.pydeck_chart(
+            pdk.Deck(
+                map_provider="carto",
+                map_style="dark",
+                initial_view_state=kaart_view,
+                layers=[kaart_layer],
+                height=220,
+            ),
+            use_container_width=True,
+        )
 
         # Rapport ophalen
         bestaand = zoek_bestaand_rapport(adres_input)
