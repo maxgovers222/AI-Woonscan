@@ -191,7 +191,7 @@ for k, v in [("huidig_adres", ""), ("huidig_rapport", ""), ("huidig_bouwjaar", "
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 /* ── Tokens ───────────────────────────────────────── */
 :root {
@@ -226,7 +226,7 @@ html, body, .stApp,
 [data-testid="stAppViewContainer"],
 [data-testid="stMain"] {
   background: var(--bg) !important;
-  font-family: 'Outfit', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   color: var(--ink) !important;
 }
 
@@ -253,7 +253,7 @@ html, body, .stApp,
   border-bottom: 1px solid var(--border);
 }
 .nav-logo {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 700;
   font-size: 1.25rem;
   color: var(--ink);
@@ -303,7 +303,7 @@ html, body, .stApp,
   50% { opacity: .25; }
 }
 .hero-h1 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 900;
   font-size: clamp(2.4rem, 5vw, 3.4rem);
   color: var(--ink);
@@ -402,7 +402,7 @@ html, body, .stApp,
   margin-bottom: 8px;
 }
 .metric-val {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 700;
   font-size: 2rem;
   color: var(--ink);
@@ -459,7 +459,7 @@ html, body, .stApp,
   color: var(--ink-2);
 }
 .rcard-body h1, .rcard-body h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 700;
   color: var(--ink);
   font-size: 1.15rem;
@@ -534,7 +534,7 @@ html, body, .stApp,
   background: linear-gradient(90deg, var(--green), #34D399);
 }
 .paywall-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 700;
   font-size: 1.55rem;
   color: var(--ink);
@@ -549,7 +549,7 @@ html, body, .stApp,
   margin: 0 auto 22px;
 }
 .paywall-price {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 900;
   font-size: 3.2rem;
   color: var(--ink);
@@ -591,7 +591,7 @@ html, body, .stApp,
 /* ── How it works ─────────────────────────────────── */
 .how { margin-bottom: 48px; }
 .how-h {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 700;
   font-size: 1.5rem;
   color: var(--ink);
@@ -670,7 +670,7 @@ html, body, .stApp,
 }
 .stat { text-align: center; }
 .stat-n {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 900;
   font-size: 2.2rem;
   color: var(--ink);
@@ -711,7 +711,7 @@ div[data-testid="stTextInput"] > div > div:focus-within {
   box-shadow: 0 0 0 3px var(--green-glow), var(--sh-1) !important;
 }
 div[data-testid="stTextInput"] input {
-  font-family: 'Outfit', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: 1rem !important;
   color: var(--ink) !important;
   padding: 15px 18px !important;
@@ -736,7 +736,7 @@ div[data-testid="stButton"] > button {
   color: #fff !important;
   border: none !important;
   border-radius: 999px !important;
-  font-family: 'Outfit', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-weight: 700 !important;
   font-size: .95rem !important;
   padding: 13px 36px !important;
@@ -759,7 +759,7 @@ div[data-testid="stDownloadButton"] > button {
   color: var(--ink) !important;
   border: 1px solid var(--border-2) !important;
   border-radius: 999px !important;
-  font-family: 'Outfit', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-weight: 600 !important;
   font-size: .92rem !important;
   padding: 13px 36px !important;
@@ -780,7 +780,7 @@ div[data-testid="stLinkButton"] > a {
   background: var(--green) !important;
   color: #fff !important;
   border-radius: 999px !important;
-  font-family: 'Outfit', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-weight: 700 !important;
   font-size: .97rem !important;
   padding: 14px 40px !important;
@@ -803,7 +803,7 @@ div[data-testid="stLinkButton"] > a:hover {
   border-color: var(--border-2) !important;
   color: var(--ink-2) !important;
   border-radius: var(--r) !important;
-  font-family: 'Outfit', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
 }
 
 /* Map */
@@ -822,7 +822,7 @@ div[data-testid="stLinkButton"] > a:hover {
 
 /* Spinner */
 [data-testid="stSpinner"] p {
-  font-family: 'Outfit', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   color: var(--muted) !important;
   font-size: .86rem !important;
 }
@@ -849,7 +849,7 @@ div[data-testid="stLinkButton"] > a:hover {
 
 /* 1. Verwijder lijnen uit het rapport */
 .rcard-body h1, .rcard-body h2 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Inter', sans-serif;
     border-bottom: none !important; /* Verwijdert de lijn onder koppen */
     margin: 1.5em 0 .5em;
 }
